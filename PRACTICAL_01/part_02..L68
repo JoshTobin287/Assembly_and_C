@@ -1,0 +1,25 @@
+00001000 Starting Address
+Assembler used: EASy68K Editor/Assembler v5.16.01
+Created On: 16/01/2026 18:18:17
+
+00000000                             1  *-----------------------------------------------------------
+00000000                             2  * Title      : part2.X68
+00000000                             3  * Written by : Josh Tobin
+00000000                             4  * Date       : 15/01/2026
+00000000                             5  * Description: Assembly
+00000000                             6  *-----------------------------------------------------------
+00000000  223C 00000111              7      MOVE.L  #$00000111, D1     ; Load immediate value into D1
+00000006  1401                       8      MOVE.B  D1, D2             ; Copy byte from D1 to D2
+00000008  11C1 2000                  9      MOVE.B  D1, $2000          ; Store byte from D1 to memory $2000
+0000000C  1438 2000                 10      MOVE.B  $2000, D2          ; Load byte from memory $2000 into D2
+00000010  11F8 2000 3000            11      MOVE.B  $2000, $3000       ; Copy byte from $2000 to memory $3000
+00000016                            12   
+Line 13 WARNING: END directive missing, starting address not set
+
+No errors detected
+1 warning generated
+
+
+SYMBOL TABLE INFORMATION
+Symbol-name         Value
+-------------------------
