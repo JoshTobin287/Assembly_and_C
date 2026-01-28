@@ -1,0 +1,54 @@
+00001000 Starting Address
+Assembler used: EASy68K Editor/Assembler v5.16.01
+Created On: 28/01/2026 16:04:36
+
+00000000                             1  *-----------------------------------------------------------
+00000000                             2  * Title      :
+00000000                             3  * Written by :
+00000000                             4  * Date       :
+00000000                             5  * Description:
+00000000                             6  *-----------------------------------------------------------
+00001000                             7      ORG    $1000
+00001000                             8  START:      
+00001000  41F9 00001046              9      LEA     PLAYER_HEALTH, A0
+00001006  43F9 00001047             10      LEA     PLAYER_POINTS, A1
+0000100C  45F9 0000104B             11      LEA     PLAYER_X, A2
+00001012  47F9 0000104D             12      LEA     PLAYER_Y, A3
+00001018  49F9 0000104F             13      LEA     BOSS_HEALTH, A4
+0000101E  4BF9 00001050             14      LEA     BOSS_X, A5
+00001024                            15    
+00001024  10BC 0064                 16      MOVE.B  #$64, (A0)
+00001028  32BC 0064                 17      MOVE.W  #100, (A1)
+0000102C  34BC 0032                 18      MOVE.W  #50,  (A2)
+00001030  36BC 001E                 19      MOVE.W  #30,  (A3)
+00001034  18BC 0064                 20      MOVE.B  #$64, (A4)
+00001038  3ABC 00C8                 21      MOVE.W  #200, (A5)
+0000103C  22BC 000003E8             22      MOVE.L  #1000, (A1)
+00001042                            23  
+00001042  FFFF FFFF                 24          SIMHALT
+00001046                            25  
+00001046= 00                        26  PLAYER_HEALTH   dc.b 0
+00001047= 00 00 00 00               27  PLAYER_POINTS   dc.b 0,0,0,0
+0000104B= 00 00                     28  PLAYER_X        dc.b 0,0
+0000104D= 00 00                     29  PLAYER_Y        dc.b 0,0
+0000104F= 00                        30  BOSS_HEALTH     dc.b 0
+00001050= 00 00                     31  BOSS_X          dc.b 0,0
+00001052= 00 00                     32  BOSS_Y          dc.b 0,0         
+00001054                            33        
+00001054                            34      END    START        
+
+No errors detected
+No warnings generated
+
+
+SYMBOL TABLE INFORMATION
+Symbol-name         Value
+-------------------------
+BOSS_HEALTH         104F
+BOSS_X              1050
+BOSS_Y              1052
+PLAYER_HEALTH       1046
+PLAYER_POINTS       1047
+PLAYER_X            104B
+PLAYER_Y            104D
+START               1000
