@@ -1,0 +1,80 @@
+00001000 Starting Address
+Assembler used: EASy68K Editor/Assembler v5.16.01
+Created On: 05/02/2026 12:49:31
+
+00000000                             1  *-----------------------------------------------------------
+00000000                             2  * Title      :
+00000000                             3  * Written by :
+00000000                             4  * Date       :
+00000000                             5  * Description:
+00000000                             6  *-----------------------------------------------------------
+00001000                             7      ORG    $1000
+00001000                             8  START:      
+00001000                             9      ;PLAYER HEALTH
+00001000  11FC 0064 3000            10      MOVE.B  #100,   $3000
+00001006  43F8 3000                 11      LEA     $3000,  A1
+0000100A                            12      
+0000100A                            13      ;BOSS HEALTH
+0000100A  11FC 00C8 3010            14      MOVE.B  #200,   $3010
+00001010  45F8 3010                 15      LEA     $3010,  A2
+00001014                            16      
+00001014                            17      ;BOSS LOCATION
+00001014  103C 0001                 18      MOVE.B  #$1,    D0      ;BOSS X POSTION
+00001018  11FC 000A 3009            19      MOVE.B  #10,    $3009   ;BOSS Y POSTION
+0000101E                            20      
+0000101E                            21      ;PLAYER LOCATION
+0000101E  163C 0002                 22      MOVE.B  #$2,    D3      ;PLAYER X POSITION
+00001022  11FC 000A 3059            23      MOVE.B  #10,    $3059   ;PLAYER Y POSITION
+00001028                            24  
+00001028                            25  
+00001028                            26  PLAYER_TURN:
+00001028  123C 0002                 27      MOVE.B  #$2,    D1      ;PLAYER MOVES - X POSTION
+0000102C  163C 0000                 28      MOVE.B  #00,    D3      ;REVERTS TO DEFAULT
+00001030  11FC 000A 3019            29      MOVE.B  #10,    $3019   ;PLAYER MOVES - Y POSTION
+00001036  11FC 00FF 3059            30      MOVE.B  #$FF,   $3059   ;REVERTS TO DEFAULT
+0000103C  6100 001A                 31      BSR     PLAYER_CLOSE_ATTACK     ;PLAYER TURN
+00001040                            32      
+00001040                            33  PLAYER_TURN2:
+00001040  163C 0002                 34      MOVE.B  #$2,    D3
+00001044  123C 0000                 35      MOVE.B  #00,    D1
+00001048  11FC 000A 3059            36      MOVE.B  #10,    $3059
+0000104E  11FC 00FF 3019            37      MOVE.B  #$FF,   $3019
+00001054  6100 000A                 38      BSR     PLAYER_RANGED_ATTACK
+00001058                            39      
+00001058                            40  
+00001058                            41  PLAYER_CLOSE_ATTACK:
+00001058  0412 0050                 42      SUB.B   #80,    (A2)    ;PLAYER ATTACKS, BOSS LOSES HEALTH
+0000105C  6100 000A                 43      BSR     BOSS_TURN
+00001060                            44  
+00001060                            45  PLAYER_RANGED_ATTACK:
+00001060  0412 0078                 46      SUB.B   #120,   (A2)
+00001064  6100 000C                 47      BSR     GAME_END 
+00001068                            48      
+00001068                            49      
+00001068                            50  BOSS_TURN:
+00001068  6100 0002                 51      BSR     BOSS_ATTACK     ;BOSS TURN
+0000106C                            52      
+0000106C                            53  BOSS_ATTACK:
+0000106C  0411 005A                 54      SUB.B   #90,    (A1)    ;BOSS ATTACKS, PLAYER LOSES HEALTH
+00001070  61CE                      55      BSR     PLAYER_TURN2
+00001072                            56      
+00001072                            57  GAME_END:
+00001072                            58                  
+00001072  FFFF FFFF                 59      SIMHALT            
+00001076                            60      END    START       
+
+No errors detected
+No warnings generated
+
+
+SYMBOL TABLE INFORMATION
+Symbol-name         Value
+-------------------------
+BOSS_ATTACK         106C
+BOSS_TURN           1068
+GAME_END            1072
+PLAYER_CLOSE_ATTACK  1058
+PLAYER_RANGED_ATTACK  1060
+PLAYER_TURN         1028
+PLAYER_TURN2        1040
+START               1000
