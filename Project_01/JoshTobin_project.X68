@@ -1,12 +1,15 @@
+
 *-----------------------------------------------------------
 * Title      : Game Starter Kit
-* Written by : Philip Bourke
-* Date       : 05/02/2025
+* Written by : Josh Tobin
+* Date       : 
 * Description: Project Starter Kit
 *-----------------------------------------------------------
     ORG    $1000
 START:                  ; first instruction of program
-
+    BSR     START_MENU
+    BSR     INITIALISE
+    BSR     GAME
 *-----------------------------------------------------------
 * Section       : Trap Codes
 * Description   : Trap Codes used throughout StarterKit
@@ -30,7 +33,7 @@ PLYR_W_INIT EQU         08          ; Players initial Width
 PLYR_H_INIT EQU         08          ; Players initial Height
 
 PLYR_DFLT_V EQU         00          ; Default Player Velocity
-PLYR_JUMP_V EQU        -20         ; Player Jump Velocity
+PLYR_JUMP_V EQU        -25         ; Player Jump Velocity
 PLYR_DFLT_G EQU         02         ; Player Default Gravity
 
 GND_TRUE    EQU         01          ; Player on Ground True
@@ -40,14 +43,17 @@ RUN_INDEX   EQU         00          ; Player Run Sound Index
 JMP_INDEX   EQU         01          ; Player Jump Sound Index  
 OPPS_INDEX  EQU         02          ; Player Opps Sound Index
 
-ENMY_W_INIT EQU         08          ; Enemy initial Width
-ENMY_H_INIT EQU         08          ; Enemy initial Height
+SMALLZOMB_W_INIT EQU    08         ; Enemy initial Width
+SMALLZOMB_H_INIT EQU    08          ; Enemy initial Height
 
-*-----------------------------------------------------------
-* Section       : Game Stats
-* Description   : Points
-*-----------------------------------------------------------
-POINTS      EQU         01          ; Points added
+LARGEZOMB_W_INIT EQU    16         ; Enemy initial Width
+LARGEZOMB_H_INIT EQU    16          ; Enemy initial Height
+
+HULL_MAX    EQU         100
+
+FUEL_W_INIT EQU         08          ;Fuel initail width
+FUEL_H_INIT EQU         14          ;Fuel initial height
+FUEL_MAX    EQU         100         ;max fuel
 
 *-----------------------------------------------------------
 * Section       : Keyboard Keys
@@ -56,7 +62,40 @@ POINTS      EQU         01          ; Points added
 *-----------------------------------------------------------
 SPACEBAR    EQU         $20         ; Spacebar ASCII Keycode
 ESCAPE      EQU         $1B         ; Escape ASCII Keycode
+*-----------------------------------------------------------
+* Subroutine : START_MENU
+* Description: Display welcome screen and wait for SPACE to start
+*-----------------------------------------------------------
 
+START_MENU:
+    ; Clear screen first
+    MOVE.B  #TC_CURSR_P, D0       ; Trap: set cursor position
+    MOVE.W  #$FF00, D1            ; Fill screen with blank (clear)
+    TRAP    #15                    ; Execute trap
+
+    ; Display Game Title
+    MOVE.B  #TC_CURSR_P, D0       ; Set cursor
+    MOVE.W  #$0201, D1            ; Row 2, Column 2
+    TRAP    #15
+    LEA     GAME_TITLE_MSG, A1    ; Load pointer to title message
+    MOVE    #13, D0                ; Print string without newline
+    TRAP    #15
+
+    ; Display "Press SPACE to start"
+    MOVE.B  #TC_CURSR_P, D0
+    MOVE.W  #$0401, D1            ; Row 4, Column 2
+    TRAP    #15
+    LEA     START_MSG, A1
+    MOVE    #13, D0
+    TRAP    #15
+
+WAIT_FOR_START:
+    MOVE.B  #TC_KEYCODE, D0       ; Check key press
+    TRAP    #15
+    CMP.B   #SPACEBAR, D1          ; Did user press SPACE?
+    BNE     WAIT_FOR_START          ; If not, loop again
+    RTS                             ; Return to start game
+    
 *-----------------------------------------------------------
 * Subroutine    : Initialise
 * Description   : Initialise game data into memory such as 
@@ -72,10 +111,9 @@ INITIALISE:
     CLR.L   D1
     MOVE.L  D1, KILL_COUNT
     
-    ; Initialize Fuel
-    MOVE.L  #100, FUEL       ; Start with 100 fuel units
-    CLR.L   FUEL_TIMER
-
+    ; Intiailse Hull Integrity
+    MOVE.L  #100,   HULL_INTEGRITY
+    
     ; Screen Size
     MOVE.B  #TC_SCREEN, D0          ; access screen information
     MOVE.L  #TC_S_SIZE, D1          ; placing 0 in D1 triggers loading screen size information
@@ -112,29 +150,40 @@ INITIALISE:
     ; Initialize Player on Ground
     MOVE.L  #GND_TRUE,  PLYR_ON_GND ; Init Player on Ground
 
-    ; Initial Position for Enemy
+    ; Initial Position for small zombie
     CLR.L   D1                      ; Clear contents of D1 (XOR is faster)
     MOVE.W  SCREEN_W,   D1          ; Place Screen width in D1
-    MOVE.L  D1,         ENEMY_X     ; Enemy X Position
+    MOVE.L  D1,         SMALLZOMB_X     ; Enemy X Position
 
     CLR.L   D1                      ; Clear contents of D1 (XOR is faster)
     MOVE.W  SCREEN_H,   D1          ; Place Screen width in D1
     DIVU    #02,        D1          ; divide by 2 for center on Y Axis
-    MOVE.L  D1,         ENEMY_Y     ; Enemy Y Position
+    MOVE.L  D1,         SMALLZOMB_Y     ; Enemy Y Position
     
+    ; Intial Postion for large Zombie
+    CLR.L   D1
+    MOVE.W  SCREEN_W,   D1
+    MOVE.L  D1,         LARGEZOMB_X
+    
+    CLR.L   D1
+    MOVE.W  SCREEN_H,   D1
+    MOVE.L  D1,         LARGEZOMB_Y
+    
+    ; Initialize Fuel
+    MOVE.L  #100, FUEL       ; Start with 100 fuel units
+    CLR.L   FUEL_TIMER
+
     ;Initial Position for Fuel
     CLR.L   D1
     MOVE.W  SCREEN_W, D1       ; Start off right side
     MOVE.L  D1, FUEL_X         ; X position
 
     CLR.L   D1
-    MOVE.W  SCREEN_H, D1
-    DIVU    #3, D1             ; Place somewhere above ground
-    MOVE.L  D1, FUEL_Y         ; Y position
-
-    MOVE.L  #0, FUEL_ACTIVE    ; Not visible yet
-    CLR.L   FUEL_TIMER     ; Timer to control spawn delay
+    MOVE.L  SMALLZOMB_Y, FUEL_Y
     
+    MOVE.L  #0, FUEL_ACTIVE     ;not visible yet
+    CLR.L   FUEL_RESPAWN_TIMER  ;timer for respawn delay
+
     ; Enable the screen back buffer(see easy 68k help)
 	MOVE.B  #TC_DBL_BUF,D0          ; 92 Enables Double Buffer
     MOVE.B  #17,        D1          ; Combine Tasks
@@ -204,34 +253,37 @@ UPDATE:
     BEQ     SKIP_TIMER_DEC
     SUB.L   #1, JUMP_TIMER
     
-    ;FUEL part
-    CMP.L   #1, FUEL_ACTIVE
-    BEQ     FUEL_ON_SCREEN          ; If active, move fuel
-    BRA     FUEL_RESPAWN    ; Otherwise handle spawn delay
-
-FUEL_ON_SCREEN:
-    MOVE.L FUEL_X, D1
-    SUB.L  #1, D1           ; Move left
-    MOVE.L D1, FUEL_X
-    CMP.L #0, D1
-    BGT SKIP_FUEL_RESPAWN
-    MOVE.L #0, FUEL_ACTIVE  ; Off-screen, deactivate
-SKIP_FUEL_RESPAWN:
-    BRA SKIP_FUEL_UPDATE
-
-FUEL_RESPAWN:
-    ADD.L #1, FUEL_TIMER
-    CMP.L #180, FUEL_TIMER   ; 180 updates ~3 sec delay at 60FPS
-    BLT SKIP_FUEL_UPDATE
-    CLR.L FUEL_TIMER
-
-    MOVE.W SCREEN_W, D1
-    MOVE.L D1, FUEL_X
-    MOVE.L #1, FUEL_ACTIVE   ; Make fuel visible
-
-SKIP_FUEL_UPDATE:
-
 SKIP_TIMER_DEC:
+    
+    CMP.L   #1, FUEL_ACTIVE          ; Is fuel currently visible?
+    BNE     HANDLE_FUEL_RESPAWN      ; If NOT active, handle respawn timer
+
+    ;fuel is active
+    MOVE.L  FUEL_X, D1               ; Load current fuel X position
+    SUB.L   #1, D1                   ; Move fuel left by 1 pixel
+    MOVE.L  D1, FUEL_X               ; Store new X position
+
+    CMP.L   #0, D1                   ; Has fuel gone off left side?
+    BGT     FUEL_DONE                ; If still on screen, finish update
+
+    MOVE.L  #0, FUEL_ACTIVE          ; Off screen ? hide fuel
+    CLR.L   FUEL_RESPAWN_TIMER       ; Reset respawn timer to 0
+    BRA     FUEL_DONE                ; Skip respawn logic for now
+
+    ; fuel is not active
+HANDLE_FUEL_RESPAWN:
+    ADD.L   #1, FUEL_RESPAWN_TIMER   ; Increase respawn timer each frame
+    CMP.L   #180, FUEL_RESPAWN_TIMER ; Wait about 3 seconds (180 frames at 60fps)
+    BLT     FUEL_DONE                ; If not reached yet, exit update
+
+     ; Respawn fuel
+    CLR.L   FUEL_RESPAWN_TIMER       ; Reset respawn timer
+    MOVE.W  SCREEN_W, D1             ; Get right side of screen
+    MOVE.L  D1, FUEL_X               ; Place fuel at right edge
+    MOVE.L  #1, FUEL_ACTIVE          ; Make fuel visible again
+
+FUEL_DONE:
+
     ; Update the Players Positon based on Velocity and Gravity
     CLR.L   D1                      ; Clear contents of D1 (XOR is faster)
     MOVE.L  PLYR_VELOCITY, D1       ; Fetch Player Velocity
@@ -248,11 +300,11 @@ NO_FALL_LIMIT:
 
     ; Move the Enemy
     CLR.L   D1                      ; Clear contents of D1 (XOR is faster)
-    CLR.L   D1                      ; Clear the contents of D0
-    MOVE.L  ENEMY_X,    D1          ; Move the Enemy X Position to D0
+    MOVE.L  SMALLZOMB_X,    D1          ; Move the Enemy X Position to D0
     CMP.L   #00,        D1
-    BLE     RESET_ENEMY_POSITION    ; Reset Enemy if off Screen
-    BSR     MOVE_ENEMY              ; Move the Enemy
+    BLE     RESET_ZOMBIE_POSITION    ; Reset Enemy if off Screen
+    BSR     MOVE_ZOMBIE             ; Move the Enemy    
+    
         
     ;Fuel Cowuntdown
     ADD.L   #1, FUEL_TIMER          ; increment timer per update
@@ -267,13 +319,15 @@ SKIP_FUEL_DECREMENT:             ; label to continue normal update
 SKIP_GAME_OVER:
             
     RTS                             ; Return to subroutine  
-
 *-----------------------------------------------------------
 * Subroutine    : Move Enemy
 * Description   : Move Enemy Right to Left
 *-----------------------------------------------------------
-MOVE_ENEMY:
-    SUB.L   #01,        ENEMY_X     ; Move enemy by X Value
+MO
+MOVE_ZOMBIE:
+    ;move zombies by X valueue
+    SUB.L   #01,        SMALLZOMB_X   
+    SUB.L   #01,        LARGEZOMB_X
     
     ;DELAY loop
     MOVE.L  #3000,  D0
@@ -282,18 +336,28 @@ DELAY_LOOP:
     SUB.L   #1, D0
     BNE     DELAY_LOOP
     RTS
+*-----------------------------------------------------------
+* Subroutine    : Reset zombies 
+* Description   : Reset zombies if to passes 0 to Right of Screen
+*-----------------------------------------------------------
+RESET_ZOMBIE_POSITION:
+    CLR.L   D1
+    MOVE.W  SCREEN_W, D1
+    MOVE.L  D1, SMALLZOMB_X      ; Small zombie starts at screen edge
 
-*-----------------------------------------------------------
-* Subroutine    : Reset Enemy
-* Description   : Reset Enemy if to passes 0 to Right of Screen
-*-----------------------------------------------------------
-RESET_ENEMY_POSITION:
-    CLR.L   D1                      ; Clear contents of D1 (XOR is faster)
-    MOVE.W  SCREEN_W,   D1          ; Place Screen width in D1
-    MOVE.L  D1,         ENEMY_X     ; Enemy X Position
+    ADD.L   #120, D1             ; Push large zombie further right
+    MOVE.L  D1, LARGEZOMB_X      ; Large zombie starts later
+
+    ; Reset vertical positions as well (center on screen)
+    CLR.L   D1
+    MOVE.W  SCREEN_H, D1
+    DIVU    #2, D1
+    MOVE.L  D1, SMALLZOMB_Y      ; Small zombie vertical position
+    MOVE.L  D1, LARGEZOMB_Y      ; Large zombie vertical position
+
     RTS
-
-*-----------------------------------------------------------
+    
+*----------------------------------------------------------
 * Subroutine    : Draw
 * Description   : Draw Screen
 *-----------------------------------------------------------
@@ -309,7 +373,8 @@ DRAW:
 
     BSR     DRAW_PLYR_DATA          ; Draw Draw Score, HUD, Player X and Y
     BSR     DRAW_PLAYER             ; Draw Player
-    BSR     DRAW_ENEMY              ; Draw Enemy
+    BSR     DRAW_SMALLZOMB          ; Draw small zombie
+    BSR     DRAW_LARGEZOMB          ; Draw large zombie
     
     ;Draw Fuel
     BSR     DRAW_FUEL
@@ -337,7 +402,7 @@ DRAW_PLYR_DATA:
     MOVE.B #03, D0                ; Display as number
     TRAP #15                      ; Print count
 
-    ; --- Draw Fuel ---
+    ; display fuel
     MOVE.B  #TC_CURSR_P, D0
     MOVE.W  #$0202, D1              ; column 2, row 2
     TRAP    #15
@@ -349,6 +414,21 @@ DRAW_PLYR_DATA:
     MOVE.W  #$0902, D1              ; column 9, row 2 for value
     TRAP    #15
     MOVE.L  FUEL, D1                ; current fuel value
+    MOVE.B  #03, D0                 ; display as number
+    TRAP    #15
+    
+    ; display hull integrity
+    MOVE.B  #TC_CURSR_P, D0
+    MOVE.W  #$0203, D1              ; c
+    TRAP    #15
+    LEA     HULL_INTEGRITY_LABEL, A1      ; pointer to "Hull Integrity: "
+    MOVE    #13, D0                 ; no linefeed
+    TRAP    #15
+
+    MOVE.B  #TC_CURSR_P, D0
+    MOVE.W  #$1003, D1              ; 
+    TRAP    #15
+    MOVE.L  HULL_INTEGRITY, D1                ; current fuel value
     MOVE.B  #03, D0                 ; display as number
     TRAP    #15
 
@@ -486,27 +566,51 @@ DRAW_PLAYER:
     RTS                             ; Return to subroutine
 
 *-----------------------------------------------------------
-* Subroutine    : Draw Enemy
-* Description   : Draw Enemy Square
+* Subroutine    : Draw small zombie
+* Description   : Draw small zombie Square
 *-----------------------------------------------------------
-DRAW_ENEMY:
+DRAW_SMALLZOMB:
     ; Set Pixel Colors
     MOVE.L  #RED,       D1          ; Set Background color
     MOVE.B  #80,        D0          ; Task for Background Color
     TRAP    #15                     ; Trap (Perform action)
 
     ; Set X, Y, Width and Height
-    MOVE.L  ENEMY_X,    D1          ; X
-    MOVE.L  ENEMY_Y,    D2          ; Y
-    MOVE.L  ENEMY_X,    D3
-    ADD.L   #ENMY_W_INIT,   D3      ; Width
-    MOVE.L  ENEMY_Y,    D4 
-    ADD.L   #ENMY_H_INIT,   D4      ; Height
+    MOVE.L  SMALLZOMB_X,    D1          ; X
+    MOVE.L  SMALLZOMB_Y,    D2          ; Y
+    MOVE.L  SMALLZOMB_X,    D3
+    ADD.L   #SMALLZOMB_W_INIT,   D3      ; Width
+    MOVE.L  SMALLZOMB_Y,    D4 
+    ADD.L   #SMALLZOMB_H_INIT,   D4      ; Height
     
     ; Draw Enemy    
     MOVE.B  #87,        D0          ; Draw Enemy
     TRAP    #15                     ; Trap (Perform action)
     RTS                             ; Return to subroutine
+    
+*-----------------------------------------------------------
+* Subroutine    : Draw large zombie
+* Description   : Draw large zombie Square
+*-----------------------------------------------------------
+DRAW_LARGEZOMB:
+    ; Set Pixel Colors
+    MOVE.L  #RED,       D1          ; Set Background color
+    MOVE.B  #80,        D0          ; Task for Background Color
+    TRAP    #15                     ; Trap (Perform action)
+
+    ; Set X, Y, Width and Height
+    MOVE.L  LARGEZOMB_X,    D1          ; X
+    MOVE.L  LARGEZOMB_Y,    D2          ; Y
+    MOVE.L  LARGEZOMB_X,    D3
+    ADD.L   #LARGEZOMB_W_INIT,   D3      ; Width
+    MOVE.L  LARGEZOMB_Y,    D4 
+    ADD.L   #LARGEZOMB_H_INIT,   D4      ; Height
+    
+    ; Draw Enemy    
+    MOVE.B  #87,        D0          ; Draw Enemy
+    TRAP    #15                     ; Trap (Perform action)
+    RTS                             ; Return to subroutine
+
     
 *-------------------------------------------------
 *DRAW_FUEL
@@ -525,12 +629,13 @@ DRAW_FUEL:
     MOVE.L  FUEL_X, D1         ; X start
     MOVE.L  FUEL_Y, D2         ; Y start
     MOVE.L  FUEL_X, D3         ; X end
-    ADD.L   FUEL, D3           ; Width = current fuel
+    ADD.L   FUEL_W_INIT, D3           ; Width = current fuel
     MOVE.L  FUEL_Y, D4         ; Y end
-    ADD.L   #8, D4             ; Height of bar
+    ADD.L   #FUEL_H_INIT, D4             ; Height of bar
+    
+    ;Draw fuel
     MOVE.B  #87, D0            ; Draw rectangle
     TRAP    #15
-
 SKIP_DRAW_FUEL:
     RTS
 
@@ -545,95 +650,181 @@ SKIP_DRAW_FUEL:
 * PLAYER_H + PLAYER_Y >= ENEMY_Y
 *-----------------------------------------------------------
 CHECK_COLLISIONS:
-    CLR.L   D1                      ; Clear D1
-    CLR.L   D2                      ; Clear D2
-PLAYER_X_LTE_TO_ENEMY_X_PLUS_W:
-    MOVE.L  PLAYER_X,   D1          ; Move Player X to D1
-    MOVE.L  ENEMY_X,    D2          ; Move Enemy X to D2
-    ADD.L   ENMY_W_INIT,D2          ; Set Enemy width X + Width
-    CMP.L   D1,         D2          ; Do the Overlap ?
-    BLE     PLAYER_X_PLUS_W_LTE_TO_ENEMY_X  ; Less than or Equal ?
-    BRA     COLLISION_CHECK_DONE    ; If not no collision
-PLAYER_X_PLUS_W_LTE_TO_ENEMY_X:     ; Check player is not  
-    ADD.L   PLYR_W_INIT,D1          ; Move Player Width to D1
-    MOVE.L  ENEMY_X,    D2          ; Move Enemy X to D2
-    CMP.L   D1,         D2          ; Do they OverLap ?
-    BGE     PLAYER_Y_LTE_TO_ENEMY_Y_PLUS_H  ; Less than or Equal
-    BRA     COLLISION_CHECK_DONE    ; If not no collision   
-PLAYER_Y_LTE_TO_ENEMY_Y_PLUS_H:     
-    MOVE.L  PLAYER_Y,   D1          ; Move Player Y to D1
-    MOVE.L  ENEMY_Y,    D2          ; Move Enemy Y to D2
-    ADD.L   ENMY_H_INIT,D2          ; Set Enemy Height to D2
-    CMP.L   D1,         D2          ; Do they Overlap ?
-    BLE     PLAYER_Y_PLUS_H_LTE_TO_ENEMY_Y  ; Less than or Equal
-    BRA     COLLISION_CHECK_DONE    ; If not no collision 
-PLAYER_Y_PLUS_H_LTE_TO_ENEMY_Y:     ; Less than or Equal ?
-    ADD.L   PLYR_H_INIT,D1          ; Add Player Height to D1
-    MOVE.L  ENEMY_Y,    D2          ; Move Enemy Height to D2  
-    CMP.L   D1,         D2          ; Do they OverLap ?
-    BGE     COLLISION               ; Collision !
-    BRA     COLLISION_CHECK_DONE    ; If not no collision
-COLLISION_CHECK_DONE:               ; No Collision Update points
-    ADD.L   #POINTS,    D1          ; Move points upgrade to D1
-    ADD.L   PLAYER_SCORE,D1         ; Add to current player score
-    MOVE.L  D1, PLAYER_SCORE        ; Update player score in memory
-    RTS                             ; Return to subroutine
 
-COLLISION:
-    BSR     PLAY_OPPS               ; Play Opps Wav
-    MOVE.L  #00, PLAYER_SCORE       ; Reset Player Score
+; -----------------------------
+; Check Small Zombie Collision
+; -----------------------------
+    CLR.L   D1
+    CLR.L   D2
+
+; X-axis: PLAYER_X <= SMALLZOMB_X + WIDTH
+    MOVE.L  PLAYER_X, D1
+    MOVE.L  SMALLZOMB_X, D2
+    ADD.L   SMALLZOMB_W_INIT, D2
+    CMP.L   D1, D2
+    BGT     CHECK_LARGEZOMB_COLLISION  ; skip small zombie if no overlap
+
+; X-axis: PLAYER_X + PLAYER_W >= SMALLZOMB_X
+    MOVE.L  PLAYER_X, D1
+    ADD.L   PLYR_W_INIT, D1
+    MOVE.L  SMALLZOMB_X, D2
+    CMP.L   D1, D2
+    BLT     CHECK_LARGEZOMB_COLLISION  ; skip small zombie if no overlap
+
+; Y-axis: PLAYER_Y <= SMALLZOMB_Y + HEIGHT
+    MOVE.L  PLAYER_Y, D1
+    MOVE.L  SMALLZOMB_Y, D2
+    ADD.L   SMALLZOMB_H_INIT, D2
+    CMP.L   D1, D2
+    BGT     CHECK_LARGEZOMB_COLLISION  ; skip small zombie if no overlap
+
+; Y-axis: PLAYER_Y + PLAYER_H >= SMALLZOMB_Y
+    MOVE.L  PLAYER_Y, D1
+    ADD.L   PLYR_H_INIT, D1
+    MOVE.L  SMALLZOMB_Y, D2
+    CMP.L   D1, D2
+    BLT     CHECK_LARGEZOMB_COLLISION  ; skip small zombie if no overlap
+
+; Collision confirmed!
+    BSR     SMALLZOMB_COLLISION
+    BRA     COLLISION_CHECK_DONE
+
+; -----------------------------
+; Check Large Zombie Collision
+; -----------------------------
+    CHECK_LARGEZOMB_COLLISION:
+    CLR.L   D1
+    CLR.L   D2
+
+; X-axis: PLAYER_X <= LARGEZOMB_X + WIDTH
+    MOVE.L  PLAYER_X, D1
+    MOVE.L  LARGEZOMB_X, D2
+    ADD.L   LARGEZOMB_W_INIT, D2
+    CMP.L   D1, D2
+    BGT     CHECK_FUEL_COLLISION  ; skip if no overlap
+
+; X-axis: PLAYER_X + PLAYER_W >= LARGEZOMB_X
+    MOVE.L  PLAYER_X, D1
+    ADD.L   PLYR_W_INIT, D1
+    MOVE.L  LARGEZOMB_X, D2
+    CMP.L   D1, D2
+    BLT     CHECK_FUEL_COLLISION  ; skip if no overlap
+
+; Y-axis: PLAYER_Y <= LARGEZOMB_Y + HEIGHT
+    MOVE.L  PLAYER_Y, D1
+    MOVE.L  LARGEZOMB_Y, D2
+    ADD.L   LARGEZOMB_H_INIT, D2
+    CMP.L   D1, D2
+    BGT     CHECK_FUEL_COLLISION  ; skip if no overlap
+
+; Y-axis: PLAYER_Y + PLAYER_H >= LARGEZOMB_Y
+     MOVE.L  PLAYER_Y, D1
+    ADD.L   PLYR_H_INIT, D1
+    MOVE.L  LARGEZOMB_Y, D2
+    CMP.L   D1, D2
+    BLT     CHECK_FUEL_COLLISION  ; skip if no overlap
+
+   ; Collision confirmed!
+   BSR     LARGEZOMB_COLLISION
+
+; -----------------------------
+; Check Fuel Collision
+; -----------------------------
+CHECK_FUEL_COLLISION:
+; ... your existing fuel collision code ...
     
-    ;increase kill counter
-    MOVE.L KILL_COUNT,D1
-    ADD.L #1, D1
-    MOVE.L D1, KILL_COUNT
+CHECK_FUEL_COLLISION:
+
+    CMP.L   #1, FUEL_ACTIVE          ; Is the fuel currently visible?
+    BNE     COLLISION_CHECK_DONE     ; If not active, skip collision check
+
+    CLR.L   D1                        ; Clear D1 for calculations
+    CLR.L   D2                        ; Clear D2 for calculations
 
 
-    ;MAKE ENEMY DISAPPEAR
-    CLR.L   D1                      ; Clear D1
-    MOVE.W  SCREEN_W, D1            ; Get screen width
-    MOVE.L  D1, ENEMY_X             ; Move enemy back to right side
-    
-    ; Only if fuel is active
-    CMP.L #1, FUEL_ACTIVE
-    BNE SKIP_FUEL_COLLIDE
+    ; Check X-axis overlap
+    MOVE.L  PLAYER_X, D1              ; Load player X position
+    MOVE.L  FUEL_X, D2                ; Load fuel X position
+    ADD.L   FUEL_W_INIT, D2           ; Add fuel width to get right edge
+    CMP.L   D1, D2                     ; Compare left side of player with right side of fuel
+    BLE     FUEL_X2_CHECK              ; If player left <= fuel right, continue X check
+    BRA     COLLISION_CHECK_DONE       ; Otherwise, no collision
 
+FUEL_X2_CHECK:
+    ; Check second X-axis overlap: PLAYER_X + PLAYER_W_INIT >= FUEL_X
+    ADD.L   PLYR_W_INIT, D1           ; Add player width to get right side of player
+    MOVE.L  FUEL_X, D2                ; Reload fuel X
+    CMP.L   D1, D2                     ; Compare right side of player to left side of fuel
+    BGE     FUEL_Y1_CHECK              ; If player right >= fuel left, continue Y check
+    BRA     COLLISION_CHECK_DONE       ; Otherwise, no collision
 
+FUEL_Y1_CHECK:
+    ; Check Y-axis overlap: PLAYER_Y <= FUEL_Y + FUEL_H_INIT
+    MOVE.L  PLAYER_Y, D1              ; Load player Y position
+    MOVE.L  FUEL_Y, D2                ; Load fuel Y position
+    ADD.L   FUEL_H_INIT, D2           ; Add fuel height to get bottom of fuel
+    CMP.L   D1, D2                     ; Compare top of player with bottom of fuel
+    BLE     FUEL_Y2_CHECK              ; If player top <= fuel bottom, continue Y check
+    BRA     COLLISION_CHECK_DONE       ; Otherwise, no collision
 
-    ; Check X overlap
-    MOVE.L PLAYER_X, D1
-    MOVE.L FUEL_X, D2
-    ADD.L #8, D2            ; Fuel width (example 8)
-    CMP.L D1, D2
-    BLE PLAYER_X_OK
-    BRA SKIP_FUEL_COLLIDE
-PLAYER_X_OK:
-    ADD.L #8, D1             ; Player width
-    MOVE.L FUEL_X, D2
-    CMP.L D1, D2
-    BGE PLAYER_Y_OK
-    BRA SKIP_FUEL_COLLIDE
-PLAYER_Y_OK:
-    MOVE.L PLAYER_Y, D1
-    MOVE.L FUEL_Y, D2
-    ADD.L #8, D2             ; Fuel height
-    CMP.L D1, D2
-    BLE FUEL_COLLECTED
-    BRA SKIP_FUEL_COLLIDE
+FUEL_Y2_CHECK:
+    ; Check second Y-axis overlap
+    ADD.L   PLYR_H_INIT, D1           ; Add player height to get bottom of player
+    MOVE.L  FUEL_Y, D2                ; Reload fuel Y
+    CMP.L   D1, D2                     ; Compare bottom of player with top of fuel
+    BGE     FUEL_COLLECTED             ; If overlap confirmed, fuel collected
+    BRA     COLLISION_CHECK_DONE       ; Otherwise, no collision
 
 FUEL_COLLECTED:
-    ;Add fuel
-    MOVE.L FUEL, D1
-    ADD.L #FUEL_AMOUNT, D1
-    MOVE.L D1, FUEL
-    ;Hide fuel until next respawn
-    MOVE.L #0, FUEL_ACTIVE
+    ;Fuel collected, update fuel and hide
+    MOVE.L  FUEL, D1                  ; Load current fuel amount
+    ADD.L   #15, D1                   ; Add 15 fuel (adjustable)
+    CMP.L   #FUEL_MAX,  D1                   ;check if it goes over max
+    BLE     FUEL_OK                     ;if fuel is is <= 100, then ok
+    MOVE.L  #FUEL_MAX,  D1                ;otherwise stay to 100
+FUEL_OK:
+    MOVE.L  D1, FUEL
+    MOVE.L  #0, FUEL_ACTIVE           ; Hide fuel until next respawn
+    CLR.L   FUEL_RESPAWN_TIMER        ; Reset respawn timer
+    BRA     COLLISION_CHECK_DONE      ; Finish fuel collision check
 
-SKIP_FUEL_COLLIDE:
+COLLISION_CHECK_DONE:
+    ; Continue normal collision logic
+    ADD.L   PLAYER_SCORE, D1          ; Update player score
+    MOVE.L  D1, PLAYER_SCORE
+    RTS                                ; Return from subroutine
+; ENEMY COLLISION RESPONSE
 
-    RTS
+SMALLZOMB_COLLISION:
+    BSR     PLAY_OPPS
+    MOVE.L  #0, PLAYER_SCORE
+    ;small zombie kill count
     
+    MOVE.L  KILL_COUNT, D1
+    ADD.L   #1, D1
+    MOVE.L  D1, KILL_COUNT
+    ;reset small zombie psoiton
+    
+    MOVE.W  SCREEN_W, D1
+    MOVE.L  D1, SMALLZOMB_X
+    BRA     CHECK_FUEL_COLLISION
+    
+LARGEZOMB_COLLISION:
+    BSR     PLAY_OPPS
+    ; Reduce hull integrity
+    MOVE.L  HULL_INTEGRITY, D1
+    SUB.L   #10, D1           ; Damage value
+    CMP.L   #0, D1
+    BGE     HULL_OK
+    MOVE.L  #0, D1            ; Hull cannot go below 0
+HULL_OK:
+    MOVE.L  D1, HULL_INTEGRITY
 
+    ; Reset large zombie X position
+    MOVE.W  SCREEN_W, D1
+    MOVE.L  D1, LARGEZOMB_X
+    BRA     CHECK_FUEL_COLLISION    
+    
 *-----------------------------------------------------------
 * Subroutine    : EXIT
 * Description   : Exit message and End Game
@@ -655,13 +846,17 @@ EXIT:
 * Description   : Messages to Print on Console, names should be
 * self documenting
 *-----------------------------------------------------------
+GAME_TITLE_MSG DC.B '*** WELCOME TO THE GAME ***',0
+START_MSG      DC.B 'Press SPACE to Start...',0
 SCORE_MSG       DC.B    'Score : ', 0       ; Score Message
 KEYCODE_MSG     DC.B    'KeyCode : ', 0     ; Keycode Message
 JUMP_MSG        DC.B    'Jump....', 0       ; Jump Message
 
 KILL_MSG        DC.B    'Kills: ', 0        ; Kill message
 FUEL_MSG        DC.B    'Out of Fuel!', 0   ; Fuel message
+HULL_MSG        DC.B    'HULL: ',0
 FUEL_MSG_LABEL  DC.B    'Fuel: ', 0
+HULL_INTEGRITY_LABEL    DC.B    'Hull Integrity: ', 0
 IDLE_MSG        DC.B    'Idle....', 0       ; Idle Message
 UPDATE_MSG      DC.B    'Update....', 0     ; Update Message
 DRAW_MSG        DC.B    'Draw....', 0       ; Draw Message
@@ -672,15 +867,20 @@ V_MSG           DC.B    'V:', 0             ; Velocity Position Message
 G_MSG           DC.B    'G:', 0             ; Gravity Position Message
 GND_MSG         DC.B    'GND:', 0           ; On Ground Position Message
 
+
+GAME_OVER_MSG DC.B '*** GAME OVER ***',0
+RESTART_MSG   DC.B 'Press SPACE to Restart',0
+EXIT_GAME_MSG DC.B 'Press ESCAPE to Exit',0
 EXIT_MSG        DC.B    'Exiting....', 0    ; Exit Message
 
 *-----------------------------------------------------------
 * Section       : Graphic Colors
 * Description   : Screen Pixel Color
 *-----------------------------------------------------------
-WHITE           EQU     $00FFFFFF
-RED             EQU     $000000FF
+WHITE           EQU     $00FFFFFF   ;white color for player
+RED             EQU     $000000FF   ;red color for zombies
 GREEN           EQU     $0000FF00  ; Green color for fuel
+GREY            EQU     $808080     ;grey color for repair kit 
 
 *-----------------------------------------------------------
 * Section       : Screen Size
@@ -708,12 +908,18 @@ PLYR_VELOCITY   DS.L    01  ; Reserve Space for Player Velocity
 PLYR_GRAVITY    DS.L    01  ; Reserve Space for Player Gravity
 PLYR_ON_GND     DS.L    01  ; Reserve Space for Player on Ground
 
-ENEMY_X         DS.L    01  ; Reserve Space for Enemy X Position
-ENEMY_Y         DS.L    01  ; Reserve Space for Enemy Y Position
+SMALLZOMB_X     DS.L    01  ; Reserve Space for small zombie X Position
+SMALLZOMB_Y     DS.L    01  ; Reserve Space for small zombie Y Position
+
+LARGEZOMB_X     DS.L    01  ; Reserve Space for large zombie X Position
+LARGEZOMB_Y     DS.L    01  ; Reserve Space for large zombie Y Position
+A
+HULL_INTEGRITY  DC.L    01      ;
 
 KILL_COUNT      DS.L    01  ; reserve space for kill counter
 FUEL            DS.L    01  ; Player fuel
 FUEL_TIMER      DS.L    01   ; Counts frames for fuel decrease
+FUEL_RESPAWN_TIMER   DS.L   1
 
 FUEL_X         DS.L  1  ; Fuel X position
 FUEL_Y         DS.L  1  ; Fuel Y position
@@ -732,6 +938,10 @@ RUN_WAV         DC.B    'run.wav',0         ; Run Sound
 OPPS_WAV        DC.B    'opps.wav',0        ; Collision Opps
 
     END    START        ; last line of source
+
+
+
+
 
 *~Font name~Courier New~
 *~Font size~10~
