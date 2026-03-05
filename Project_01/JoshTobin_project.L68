@@ -1,10 +1,10 @@
 00001000 Starting Address
 Assembler used: EASy68K Editor/Assembler v5.16.01
-Created On: 04/03/2026 20:26:23
+Created On: 05/03/2026 22:40:45
 
 00000000                             1  
 00000000                             2  *-----------------------------------------------------------
-00000000                             3  * Title      : Game Starter Kit
+00000000                             3  * Title      : ZOMBIE SPLATTER
 00000000                             4  * Written by : Josh Tobin
 00000000                             5  * Date       : 
 00000000                             6  * Description: Project Starter Kit
@@ -12,8 +12,8 @@ Created On: 04/03/2026 20:26:23
 00001000                             8      ORG    $1000
 00001000                             9  START:                  ; first instruction of program
 00001000  6100 000A                 10      BSR     START_MENU
-00001004  6100 004A                 11      BSR     INITIALISE
-00001008  6100 0150                 12      BSR     GAME
+00001004  6100 00A6                 11      BSR     INITIALISE
+00001008  6100 01D2                 12      BSR     GAME
 0000100C                            13  *-----------------------------------------------------------
 0000100C                            14  * Section       : Trap Codes
 0000100C                            15  * Description   : Trap Codes used throughout StarterKit
@@ -46,902 +46,1057 @@ Created On: 04/03/2026 20:26:23
 0000100C  =00000000                 42  RUN_INDEX   EQU         00          ; Player Run Sound Index  
 0000100C  =00000001                 43  JMP_INDEX   EQU         01          ; Player Jump Sound Index  
 0000100C  =00000002                 44  OPPS_INDEX  EQU         02          ; Player Opps Sound Index
-0000100C                            45  
-0000100C  =00000008                 46  SMALLZOMB_W_INIT EQU    08         ; Enemy initial Width
-0000100C  =00000008                 47  SMALLZOMB_H_INIT EQU    08          ; Enemy initial Height
-0000100C                            48  
-0000100C  =00000010                 49  LARGEZOMB_W_INIT EQU    16         ; Enemy initial Width
-0000100C  =00000010                 50  LARGEZOMB_H_INIT EQU    16          ; Enemy initial Height
-0000100C                            51  
-0000100C  =00000064                 52  HULL_MAX    EQU         100
-0000100C                            53  
-0000100C  =00000008                 54  FUEL_W_INIT EQU         08          ;Fuel initail width
-0000100C  =0000000E                 55  FUEL_H_INIT EQU         14          ;Fuel initial height
-0000100C  =00000064                 56  FUEL_MAX    EQU         100         ;max fuel
+0000100C  =00000003                 45  BACKGROUND_INDEX    EQU 03
+0000100C                            46  
+0000100C  =00000008                 47  SMALLZOMB_W_INIT EQU    08         ; Enemy initial Width
+0000100C  =00000008                 48  SMALLZOMB_H_INIT EQU    08          ; Enemy initial Height
+0000100C                            49  
+0000100C  =00000010                 50  LARGEZOMB_W_INIT EQU    16         ; Enemy initial Width
+0000100C  =00000016                 51  LARGEZOMB_H_INIT EQU    22         ; Enemy initial Height
+0000100C                            52  
+0000100C  =00000032                 53  BUILDING_W      EQU     50     ; width of building
+0000100C  =000000C8                 54  BUILDING_H      EQU     200     ; height of building
+0000100C                            55  
+0000100C  =00000001                 56  ROAD_HEIGHT   EQU       1       ; height of the road in pixels
 0000100C                            57  
-0000100C                            58  *-----------------------------------------------------------
-0000100C                            59  * Section       : Keyboard Keys
-0000100C                            60  * Description   : Spacebar and Escape or two functioning keys
-0000100C                            61  * Spacebar to JUMP and Escape to Exit Game
-0000100C                            62  *-----------------------------------------------------------
-0000100C  =00000020                 63  SPACEBAR    EQU         $20         ; Spacebar ASCII Keycode
-0000100C  =0000001B                 64  ESCAPE      EQU         $1B         ; Escape ASCII Keycode
-0000100C                            65  *-----------------------------------------------------------
-0000100C                            66  * Subroutine : START_MENU
-0000100C                            67  * Description: Display welcome screen and wait for SPACE to start
+0000100C  =00000064                 58  HULL_MAX    EQU         100
+0000100C                            59  
+0000100C  =00000008                 60  FUEL_W_INIT EQU         08          ;Fuel initail width
+0000100C  =0000000E                 61  FUEL_H_INIT EQU         14          ;Fuel initial height
+0000100C  =00000064                 62  FUEL_MAX    EQU         100         ;max fuel
+0000100C                            63  
+0000100C                            64  *-----------------------------------------------------------
+0000100C                            65  * Section       : Keyboard Keys
+0000100C                            66  * Description   : Spacebar and Escape or two functioning keys
+0000100C                            67  * Spacebar to JUMP and Escape to Exit Game
 0000100C                            68  *-----------------------------------------------------------
-0000100C                            69  
-0000100C                            70  START_MENU:
-0000100C                            71      ; Clear screen first
-0000100C  103C 000B                 72      MOVE.B  #TC_CURSR_P, D0       ; Trap: set cursor position
-00001010  323C FF00                 73      MOVE.W  #$FF00, D1            ; Fill screen with blank (clear)
-00001014  4E4F                      74      TRAP    #15                    ; Execute trap
-00001016                            75  
-00001016                            76      ; Display Game Title
-00001016  103C 000B                 77      MOVE.B  #TC_CURSR_P, D0       ; Set cursor
-0000101A  323C 0201                 78      MOVE.W  #$0201, D1            ; Row 2, Column 2
-0000101E  4E4F                      79      TRAP    #15
-00001020  43F9 00001760             80      LEA     GAME_TITLE_MSG, A1    ; Load pointer to title message
-00001026  303C 000D                 81      MOVE    #13, D0                ; Print string without newline
-0000102A  4E4F                      82      TRAP    #15
-0000102C                            83  
-0000102C                            84      ; Display "Press SPACE to start"
-0000102C  103C 000B                 85      MOVE.B  #TC_CURSR_P, D0
-00001030  323C 0401                 86      MOVE.W  #$0401, D1            ; Row 4, Column 2
-00001034  4E4F                      87      TRAP    #15
-00001036  43F9 0000177C             88      LEA     START_MSG, A1
-0000103C  303C 000D                 89      MOVE    #13, D0
-00001040  4E4F                      90      TRAP    #15
-00001042                            91  
-00001042                            92  WAIT_FOR_START:
-00001042  103C 0013                 93      MOVE.B  #TC_KEYCODE, D0       ; Check key press
-00001046  4E4F                      94      TRAP    #15
-00001048  B23C 0020                 95      CMP.B   #SPACEBAR, D1          ; Did user press SPACE?
-0000104C  66F4                      96      BNE     WAIT_FOR_START          ; If not, loop again
-0000104E  4E75                      97      RTS                             ; Return to start game
-00001050                            98      
-00001050                            99  *-----------------------------------------------------------
-00001050                           100  * Subroutine    : Initialise
-00001050                           101  * Description   : Initialise game data into memory such as 
-00001050                           102  * sounds and screen size
-00001050                           103  *-----------------------------------------------------------
-00001050                           104  INITIALISE:
-00001050                           105      ; Initialise Sounds
-00001050  6100 03E8                106      BSR     RUN_LOAD                ; Load Run Sound into Memory
-00001054  6100 0402                107      BSR     JUMP_LOAD               ; Load Jump Sound into Memory
-00001058  6100 041C                108      BSR     OPPS_LOAD               ; Load Opps (Collision) Sound into Memory
-0000105C                           109      
-0000105C                           110      ; Initialize Kill Counter
-0000105C  4281                     111      CLR.L   D1
-0000105E  23C1 00001896            112      MOVE.L  D1, KILL_COUNT
-00001064                           113      
-00001064                           114      ; Intiailse Hull Integrity
-00001064  23FC 00000064 00001892   115      MOVE.L  #100,   HULL_INTEGRITY
-0000106E                           116      
-0000106E                           117      ; Screen Size
-0000106E  103C 0021                118      MOVE.B  #TC_SCREEN, D0          ; access screen information
-00001072  7200                     119      MOVE.L  #TC_S_SIZE, D1          ; placing 0 in D1 triggers loading screen size information
-00001074  4E4F                     120      TRAP    #15                     ; interpret D0 and D1 for screen size
-00001076  33C1 00001860            121      MOVE.W  D1,         SCREEN_H    ; place screen height in memory location
-0000107C  4841                     122      SWAP    D1                      ; Swap top and bottom word to retrive screen size
-0000107E  33C1 0000185E            123      MOVE.W  D1,         SCREEN_W    ; place screen width in memory location
-00001084                           124  
-00001084                           125      ; Place the Player at the left
-00001084  23FC 00000064 00001866   126      MOVE.L  #100,        PLAYER_X     ; Start player near left side
-0000108E                           127  
-0000108E  4281                     128      CLR.L   D1                      ; Clear contents of D1 (XOR is faster)
-00001090  3239 00001860            129      MOVE.W  SCREEN_H,   D1          ; Place Screen width in D1
-00001096  82FC 0002                130      DIVU    #02,        D1          ; divide by 2 for center on Y Axis
-0000109A  23C1 0000186A            131      MOVE.L  D1,         PLAYER_Y    ; Players Y Position
-000010A0                           132  
-000010A0                           133      ; Initialise Player Score
-000010A0  4281                     134      CLR.L   D1                      ; Clear contents of D1 (XOR is faster)
-000010A2  7200                     135      MOVE.L  #00,        D1          ; Init Score
-000010A4  23C1 00001872            136      MOVE.L  D1,         PLAYER_SCORE
-000010AA                           137      
-000010AA  42B9 0000186E            138      CLR.L   JUMP_TIMER
-000010B0                           139  
-000010B0                           140      ; Initialise Player Velocity
-000010B0  4281                     141      CLR.L   D1                      ; Clear contents of D1 (XOR is faster)
-000010B2  123C 0000                142      MOVE.B  #PLYR_DFLT_V,D1         ; Init Player Velocity
-000010B6  23C1 00001876            143      MOVE.L  D1,         PLYR_VELOCITY
-000010BC                           144  
-000010BC                           145      ; Initialise Player Gravity
-000010BC  4281                     146      CLR.L   D1                      ; Clear contents of D1 (XOR is faster)
-000010BE  7202                     147      MOVE.L  #PLYR_DFLT_G,D1         ; Init Player Gravity
-000010C0  23C1 0000187A            148      MOVE.L  D1,         PLYR_GRAVITY
-000010C6                           149  
-000010C6                           150      ; Initialize Player on Ground
-000010C6  23FC 00000001 0000187E   151      MOVE.L  #GND_TRUE,  PLYR_ON_GND ; Init Player on Ground
-000010D0                           152  
-000010D0                           153      ; Initial Position for small zombie
-000010D0  4281                     154      CLR.L   D1                      ; Clear contents of D1 (XOR is faster)
-000010D2  3239 0000185E            155      MOVE.W  SCREEN_W,   D1          ; Place Screen width in D1
-000010D8  23C1 00001882            156      MOVE.L  D1,         SMALLZOMB_X     ; Enemy X Position
-000010DE                           157  
-000010DE  4281                     158      CLR.L   D1                      ; Clear contents of D1 (XOR is faster)
-000010E0  3239 00001860            159      MOVE.W  SCREEN_H,   D1          ; Place Screen width in D1
-000010E6  82FC 0002                160      DIVU    #02,        D1          ; divide by 2 for center on Y Axis
-000010EA  23C1 00001886            161      MOVE.L  D1,         SMALLZOMB_Y     ; Enemy Y Position
-000010F0                           162      
-000010F0                           163      ; Intial Postion for large Zombie
-000010F0  4281                     164      CLR.L   D1
-000010F2  3239 0000185E            165      MOVE.W  SCREEN_W,   D1
-000010F8  23C1 0000188A            166      MOVE.L  D1,         LARGEZOMB_X
-000010FE                           167      
-000010FE  4281                     168      CLR.L   D1
-00001100  3239 00001860            169      MOVE.W  SCREEN_H,   D1
-00001106  23C1 0000188E            170      MOVE.L  D1,         LARGEZOMB_Y
-0000110C                           171      
-0000110C                           172      ; Initialize Fuel
-0000110C  23FC 00000064 0000189A   173      MOVE.L  #100, FUEL       ; Start with 100 fuel units
-00001116  42B9 0000189E            174      CLR.L   FUEL_TIMER
-0000111C                           175  
-0000111C                           176      ;Initial Position for Fuel
-0000111C  4281                     177      CLR.L   D1
-0000111E  3239 0000185E            178      MOVE.W  SCREEN_W, D1       ; Start off right side
-00001124  23C1 000018A6            179      MOVE.L  D1, FUEL_X         ; X position
-0000112A                           180  
-0000112A  4281                     181      CLR.L   D1
-0000112C  23F9 00001886 000018AA   182      MOVE.L  SMALLZOMB_Y, FUEL_Y
-00001136                           183      
-00001136  23FC 00000000 000018AE   184      MOVE.L  #0, FUEL_ACTIVE     ;not visible yet
-00001140  42B9 000018A2            185      CLR.L   FUEL_RESPAWN_TIMER  ;timer for respawn delay
-00001146                           186  
-00001146                           187      ; Enable the screen back buffer(see easy 68k help)
-00001146  103C 005C                188      MOVE.B  #TC_DBL_BUF,D0          ; 92 Enables Double Buffer
-0000114A  123C 0011                189      MOVE.B  #17,        D1          ; Combine Tasks
-0000114E  4E4F                     190      TRAP    #15                     ; Trap (Perform action)
-00001150                           191  
-00001150                           192      ; Clear the screen (see easy 68k help)
-00001150  103C 000B                193      MOVE.B  #TC_CURSR_P,D0          ; Set Cursor Position
-00001154  323C FF00                194      MOVE.W  #$FF00,     D1          ; Fill Screen Clear
-00001158  4E4F                     195      TRAP    #15                     ; Trap (Perform action)
-0000115A                           196  
-0000115A                           197  *-----------------------------------------------------------
-0000115A                           198  * Subroutine    : Game
-0000115A                           199  * Description   : Game including main GameLoop. GameLoop is like
-0000115A                           200  * a while loop in that it runs forever until interupted
-0000115A                           201  * (Input, Update, Draw). The Enemies Run at Player Jump to Avoid
-0000115A                           202  *-----------------------------------------------------------
-0000115A                           203  GAME:
-0000115A  6100 02F0                204      BSR     PLAY_RUN                ; Play Run Wav
-0000115E                           205  GAMELOOP:
-0000115E                           206      ; Main Gameloop
-0000115E  6100 0014                207      BSR     INPUT                   ; Check Keyboard Input
-00001162  6100 0056                208      BSR     UPDATE                  ; Update positions and points
-00001166  6100 0248                209      BSR     IS_PLAYER_ON_GND        ; Check if player is on ground
-0000116A  6100 0404                210      BSR     CHECK_COLLISIONS        ; Check for Collisions
-0000116E  6100 0192                211      BSR     DRAW                    ; Draw the Scene
-00001172  60EA                     212      BRA     GAMELOOP                ; Loop back to GameLoop
-00001174                           213  
-00001174                           214  *-----------------------------------------------------------
-00001174                           215  * Subroutine    : Input
-00001174                           216  * Description   : Process Keyboard Input
-00001174                           217  *-----------------------------------------------------------
-00001174                           218  INPUT:
-00001174                           219      ; Process Input
-00001174  4281                     220      CLR.L   D1                      ; Clear Data Register
-00001176  103C 0013                221      MOVE.B  #TC_KEYCODE,D0          ; Listen for Keys
-0000117A  4E4F                     222      TRAP    #15                     ; Trap (Perform action)
-0000117C  1401                     223      MOVE.B  D1,         D2          ; Move last key D1 to D2
-0000117E  B43C 0000                224      CMP.B   #00,        D2          ; Key is pressed
-00001182  6700 000E                225      BEQ     PROCESS_INPUT           ; Process Key
-00001186  4E4F                     226      TRAP    #15                     ; Trap for Last Key
-00001188                           227      ; Check if key still pressed
-00001188  B23C 00FF                228      CMP.B   #$FF,       D1          ; Is it still pressed
-0000118C  6700 0004                229      BEQ     PROCESS_INPUT           ; Process Last Key
-00001190  4E75                     230      RTS                             ; Return to subroutine
-00001192                           231  
-00001192                           232  *-----------------------------------------------------------
-00001192                           233  * Subroutine    : Process Input
-00001192                           234  * Description   : Branch based on keys pressed
-00001192                           235  *-----------------------------------------------------------
-00001192                           236  PROCESS_INPUT:
-00001192  23C2 00001862            237      MOVE.L  D2,         CURRENT_KEY ; Put Current Key in Memory
-00001198  0CB9 0000001B 00001862   238      CMP.L   #ESCAPE,    CURRENT_KEY ; Is Current Key Escape
-000011A2  6700 059C                239      BEQ     EXIT                    ; Exit if Escape
-000011A6  0CB9 00000020 00001862   240      CMP.L   #SPACEBAR,  CURRENT_KEY ; Is Current Key Spacebar
-000011B0  6700 024C                241      BEQ     JUMP                    ; Jump
-000011B4  6000 027E                242      BRA     IDLE                    ; Or Idle
-000011B8  4E75                     243      RTS                             ; Return to subroutine
-000011BA                           244  
-000011BA                           245  *-----------------------------------------------------------
-000011BA                           246  * Subroutine    : Update
-000011BA                           247  * Description   : Main update loop update Player and Enemies
-000011BA                           248  *-----------------------------------------------------------
-000011BA                           249  UPDATE:
-000011BA                           250  
-000011BA                           251      ; Decrease jump cooldown if active
-000011BA  0CB9 00000000 0000186E   252      CMP.L   #0, JUMP_TIMER
-000011C4  6700 0008                253      BEQ     SKIP_TIMER_DEC
-000011C8  53B9 0000186E            254      SUB.L   #1, JUMP_TIMER
-000011CE                           255      
-000011CE                           256  SKIP_TIMER_DEC:
-000011CE                           257      
-000011CE  0CB9 00000001 000018AE   258      CMP.L   #1, FUEL_ACTIVE          ; Is fuel currently visible?
-000011D8  6600 002E                259      BNE     HANDLE_FUEL_RESPAWN      ; If NOT active, handle respawn timer
-000011DC                           260  
-000011DC                           261      ;fuel is active
-000011DC  2239 000018A6            262      MOVE.L  FUEL_X, D1               ; Load current fuel X position
-000011E2  5381                     263      SUB.L   #1, D1                   ; Move fuel left by 1 pixel
-000011E4  23C1 000018A6            264      MOVE.L  D1, FUEL_X               ; Store new X position
-000011EA                           265  
-000011EA  B2BC 00000000            266      CMP.L   #0, D1                   ; Has fuel gone off left side?
-000011F0  6E00 0046                267      BGT     FUEL_DONE                ; If still on screen, finish update
-000011F4                           268  
-000011F4  23FC 00000000 000018AE   269      MOVE.L  #0, FUEL_ACTIVE          ; Off screen ? hide fuel
-000011FE  42B9 000018A2            270      CLR.L   FUEL_RESPAWN_TIMER       ; Reset respawn timer to 0
-00001204  6000 0032                271      BRA     FUEL_DONE                ; Skip respawn logic for now
-00001208                           272  
-00001208                           273      ; fuel is not active
-00001208                           274  HANDLE_FUEL_RESPAWN:
-00001208  52B9 000018A2            275      ADD.L   #1, FUEL_RESPAWN_TIMER   ; Increase respawn timer each frame
-0000120E  0CB9 000000B4 000018A2   276      CMP.L   #180, FUEL_RESPAWN_TIMER ; Wait about 3 seconds (180 frames at 60fps)
-00001218  6D00 001E                277      BLT     FUEL_DONE                ; If not reached yet, exit update
-0000121C                           278  
-0000121C                           279       ; Respawn fuel
-0000121C  42B9 000018A2            280      CLR.L   FUEL_RESPAWN_TIMER       ; Reset respawn timer
-00001222  3239 0000185E            281      MOVE.W  SCREEN_W, D1             ; Get right side of screen
-00001228  23C1 000018A6            282      MOVE.L  D1, FUEL_X               ; Place fuel at right edge
-0000122E  23FC 00000001 000018AE   283      MOVE.L  #1, FUEL_ACTIVE          ; Make fuel visible again
-00001238                           284  
-00001238                           285  FUEL_DONE:
-00001238                           286  
-00001238                           287      ; Update the Players Positon based on Velocity and Gravity
-00001238  4281                     288      CLR.L   D1                      ; Clear contents of D1 (XOR is faster)
-0000123A  2239 00001876            289      MOVE.L  PLYR_VELOCITY, D1       ; Fetch Player Velocity
-00001240  2439 0000187A            290      MOVE.L  PLYR_GRAVITY, D2        ; Fetch Player Gravity
-00001246  D282                     291      ADD.L   D2,         D1          ; Add Gravity to Velocity
-00001248  23C1 00001876            292      MOVE.L  D1,         PLYR_VELOCITY ; Update Player Velocity
-0000124E  B2BC 00000002            293      CMP.L   #2, D1
-00001254  6F00 000A                294      BLE     NO_FALL_LIMIT
-00001258  7202                     295      MOVE.L  #2, D1
-0000125A  23C1 00001876            296      MOVE.L  D1, PLYR_VELOCITY
-00001260                           297  NO_FALL_LIMIT:
-00001260  D2B9 0000186A            298      ADD.L   PLAYER_Y,   D1          ; Add Velocity to Player
-00001266  23C1 0000186A            299      MOVE.L  D1,         PLAYER_Y    ; Update Players Y Position 
-0000126C                           300  
-0000126C                           301      ; Move the Enemy
-0000126C  4281                     302      CLR.L   D1                      ; Clear contents of D1 (XOR is faster)
-0000126E  2239 00001882            303      MOVE.L  SMALLZOMB_X,    D1          ; Move the Enemy X Position to D0
-00001274  B2BC 00000000            304      CMP.L   #00,        D1
-0000127A  6F00 0052                305      BLE     RESET_ZOMBIE_POSITION    ; Reset Enemy if off Screen
-0000127E  6100 0036                306      BSR     MOVE_ZOMBIE             ; Move the Enemy    
-00001282                           307      
-00001282                           308          
-00001282                           309      ;Fuel Cowuntdown
-00001282  52B9 0000189E            310      ADD.L   #1, FUEL_TIMER          ; increment timer per update
-00001288  0CB9 0000003C 0000189E   311      CMP.L   #60, FUEL_TIMER         ; check if ~1 second passed (adjust if needed)
-00001292  6D00 0020                312      BLT     SKIP_FUEL_DECREMENT     ; if not, skip decrement
-00001296  53B9 0000189A            313      SUB.L   #1, FUEL                ; decrease fuel by 1
-0000129C  42B9 0000189E            314      CLR.L   FUEL_TIMER              ; reset timer
-000012A2  0CB9 00000000 0000189A   315      CMP.L   #0, FUEL
-000012AC  6E00 0006                316      BGT     SKIP_GAME_OVER          ; if fuel > 0, skip game over
-000012B0  6100 048E                317      BSR     EXIT                     ; fuel is 0 ? end game
-000012B4                           318  SKIP_FUEL_DECREMENT:             ; label to continue normal update
-000012B4                           319  SKIP_GAME_OVER:
-000012B4                           320              
-000012B4  4E75                     321      RTS                             ; Return to subroutine  
-000012B6                           322  *-----------------------------------------------------------
-000012B6                           323  * Subroutine    : Move Enemy
-000012B6                           324  * Description   : Move Enemy Right to Left
-000012B6                           325  *-----------------------------------------------------------
-000012B6                           326  MO
-000012B6                           327  MOVE_ZOMBIE:
-000012B6                           328      ;move zombies by X valueue
-000012B6  53B9 00001882            329      SUB.L   #01,        SMALLZOMB_X   
-000012BC  53B9 0000188A            330      SUB.L   #01,        LARGEZOMB_X
-000012C2                           331      
-000012C2                           332      ;DELAY loop
-000012C2  203C 00000BB8            333      MOVE.L  #3000,  D0
-000012C8                           334      
-000012C8                           335  DELAY_LOOP:
-000012C8  5380                     336      SUB.L   #1, D0
-000012CA  66FC                     337      BNE     DELAY_LOOP
-000012CC  4E75                     338      RTS
-000012CE                           339  *-----------------------------------------------------------
-000012CE                           340  * Subroutine    : Reset zombies 
-000012CE                           341  * Description   : Reset zombies if to passes 0 to Right of Screen
-000012CE                           342  *-----------------------------------------------------------
-000012CE                           343  RESET_ZOMBIE_POSITION:
-000012CE  4281                     344      CLR.L   D1
-000012D0  3239 0000185E            345      MOVE.W  SCREEN_W, D1
-000012D6  23C1 00001882            346      MOVE.L  D1, SMALLZOMB_X      ; Small zombie starts at screen edge
-000012DC                           347  
-000012DC  0681 00000078            348      ADD.L   #120, D1             ; Push large zombie further right
-000012E2  23C1 0000188A            349      MOVE.L  D1, LARGEZOMB_X      ; Large zombie starts later
-000012E8                           350  
-000012E8                           351      ; Reset vertical positions as well (center on screen)
-000012E8  4281                     352      CLR.L   D1
-000012EA  3239 00001860            353      MOVE.W  SCREEN_H, D1
-000012F0  82FC 0002                354      DIVU    #2, D1
-000012F4  23C1 00001886            355      MOVE.L  D1, SMALLZOMB_Y      ; Small zombie vertical position
-000012FA  23C1 0000188E            356      MOVE.L  D1, LARGEZOMB_Y      ; Large zombie vertical position
-00001300                           357  
-00001300  4E75                     358      RTS
-00001302                           359      
-00001302                           360  *----------------------------------------------------------
-00001302                           361  * Subroutine    : Draw
-00001302                           362  * Description   : Draw Screen
-00001302                           363  *-----------------------------------------------------------
-00001302                           364  DRAW: 
-00001302                           365      ; Enable back buffer
-00001302  103C 005E                366      MOVE.B  #94,        D0
-00001306  4E4F                     367      TRAP    #15
-00001308                           368  
-00001308                           369      ; Clear the screen
-00001308  103C 000B                370      MOVE.B  #TC_CURSR_P,D0          ; Set Cursor Position
-0000130C  323C FF00                371      MOVE.W  #$FF00,     D1          ; Clear contents
-00001310  4E4F                     372      TRAP    #15                     ; Trap (Perform action)
-00001312                           373  
-00001312  6100 0014                374      BSR     DRAW_PLYR_DATA          ; Draw Draw Score, HUD, Player X and Y
-00001316  6100 017C                375      BSR     DRAW_PLAYER             ; Draw Player
-0000131A  6100 01A8                376      BSR     DRAW_SMALLZOMB          ; Draw small zombie
-0000131E  6100 01D4                377      BSR     DRAW_LARGEZOMB          ; Draw large zombie
-00001322                           378      
-00001322                           379      ;Draw Fuel
-00001322  6100 0208                380      BSR     DRAW_FUEL
-00001326                           381  
-00001326  4E75                     382      RTS                             ; Return to subroutine
-00001328                           383  *-----------------------------------------------------------
-00001328                           384  * Subroutine    : Draw Player Data
-00001328                           385  * Description   : Draw Player X, Y, Velocity, Gravity and OnGround
-00001328                           386  *-----------------------------------------------------------
-00001328                           387  DRAW_PLYR_DATA:
-00001328  4281                     388      CLR.L   D1                      ; Clear contents of D1 (XOR is faster)
-0000132A                           389  
-0000132A                           390      ; Display Kill Counter
-0000132A  103C 000B                391      MOVE.B #TC_CURSR_P, D0       ; Set cursor
-0000132E  323C 0201                392      MOVE.W #$0201, D1            ; Row 1, Column 2
-00001332  4E4F                     393      TRAP #15                      ; Position cursor
-00001334  43F9 000017B1            394      LEA KILL_MSG, A1              ; "Kills: " message
-0000133A  303C 000D                395      MOVE #13, D0                  ; No line feed
-0000133E  4E4F                     396      TRAP #15                      ; Print message
-00001340                           397  
-00001340  103C 000B                398      MOVE.B #TC_CURSR_P, D0       ; Set cursor
-00001344  323C 0801                399      MOVE.W #$0801, D1            ; Row 1, Column 8 (after "Kills: ")
-00001348  4E4F                     400      TRAP #15                      ; Position cursor
-0000134A  2239 00001896            401      MOVE.L KILL_COUNT, D1        ; Load kill count
-00001350  103C 0003                402      MOVE.B #03, D0                ; Display as number
-00001354  4E4F                     403      TRAP #15                      ; Print count
-00001356                           404  
-00001356                           405      ; display fuel
-00001356  103C 000B                406      MOVE.B  #TC_CURSR_P, D0
-0000135A  323C 0202                407      MOVE.W  #$0202, D1              ; column 2, row 2
-0000135E  4E4F                     408      TRAP    #15
-00001360  43F9 000017CD            409      LEA     FUEL_MSG_LABEL, A1      ; pointer to "Fuel: "
-00001366  303C 000D                410      MOVE    #13, D0                 ; no linefeed
-0000136A  4E4F                     411      TRAP    #15
-0000136C                           412  
-0000136C  103C 000B                413      MOVE.B  #TC_CURSR_P, D0
-00001370  323C 0902                414      MOVE.W  #$0902, D1              ; column 9, row 2 for value
-00001374  4E4F                     415      TRAP    #15
-00001376  2239 0000189A            416      MOVE.L  FUEL, D1                ; current fuel value
-0000137C  103C 0003                417      MOVE.B  #03, D0                 ; display as number
-00001380  4E4F                     418      TRAP    #15
-00001382                           419      
-00001382                           420      ; display hull integrity
-00001382  103C 000B                421      MOVE.B  #TC_CURSR_P, D0
-00001386  323C 0203                422      MOVE.W  #$0203, D1              ; c
-0000138A  4E4F                     423      TRAP    #15
-0000138C  43F9 000017D4            424      LEA     HULL_INTEGRITY_LABEL, A1      ; pointer to "Hull Integrity: "
-00001392  303C 000D                425      MOVE    #13, D0                 ; no linefeed
-00001396  4E4F                     426      TRAP    #15
-00001398                           427  
-00001398  103C 000B                428      MOVE.B  #TC_CURSR_P, D0
-0000139C  323C 1003                429      MOVE.W  #$1003, D1              ; 
-000013A0  4E4F                     430      TRAP    #15
-000013A2  2239 00001892            431      MOVE.L  HULL_INTEGRITY, D1                ; current fuel value
-000013A8  103C 0003                432      MOVE.B  #03, D0                 ; display as number
-000013AC  4E4F                     433      TRAP    #15
-000013AE                           434  
-000013AE                           435   
-000013AE  4E75                     436      RTS  
-000013B0                           437      
-000013B0                           438  *-----------------------------------------------------------
-000013B0                           439  * Subroutine    : Player is on Ground
-000013B0                           440  * Description   : Check if the Player is on or off Ground
-000013B0                           441  *-----------------------------------------------------------
-000013B0                           442  IS_PLAYER_ON_GND:
-000013B0                           443      ; Check if Player is on Ground
-000013B0  4281                     444      CLR.L   D1                      ; Clear contents of D1 (XOR is faster)
-000013B2  4282                     445      CLR.L   D2                      ; Clear contents of D2 (XOR is faster)
-000013B4  3239 00001860            446      MOVE.W  SCREEN_H,   D1          ; Place Screen width in D1
-000013BA  82FC 0002                447      DIVU    #02,        D1          ; divide by 2 for center on Y Axis
-000013BE  2439 0000186A            448      MOVE.L  PLAYER_Y,   D2          ; Player Y Position
-000013C4  B481                     449      CMP.L     D1,         D2        ; Compare middle of Screen with Players Y Position 
-000013C6  6D00 002A                450      BLT     SET_OFF_GROUND           ; The Player is on the Ground Plane
-000013CA  6000 0002                451      BRA     SET_ON_GROUND          ; The Player is off the Ground
-000013CE                           452                                
-000013CE                           453  
-000013CE                           454  
-000013CE                           455  *-----------------------------------------------------------
-000013CE                           456  * Subroutine    : On Ground
-000013CE                           457  * Description   : Set the Player On Ground
-000013CE                           458  *-----------------------------------------------------------
-000013CE                           459  SET_ON_GROUND:
-000013CE  4281                     460      CLR.L   D1                      ; Clear contents of D1 (XOR is faster)
-000013D0  3239 00001860            461      MOVE.W  SCREEN_H,   D1          ; Place Screen width in D1
-000013D6  82FC 0002                462      DIVU    #02,        D1          ; divide by 2 for center on Y Axis
-000013DA  23C1 0000186A            463      MOVE.L  D1,         PLAYER_Y    ; Reset the Player Y Position
-000013E0  42B9 00001876            464      CLR.L   PLYR_VELOCITY                     ; Clear contents of D1 (XOR is faster)
-000013E6  23FC 00000001 0000187E   465      MOVE.L  #GND_TRUE,  PLYR_ON_GND ; Player is on Ground
-000013F0  4E75                     466      RTS
-000013F2                           467  
-000013F2                           468  *-----------------------------------------------------------
-000013F2                           469  * Subroutine    : Off Ground
-000013F2                           470  * Description   : Set the Player Off Ground
-000013F2                           471  *-----------------------------------------------------------
-000013F2                           472  SET_OFF_GROUND:
-000013F2  23FC 00000000 0000187E   473      MOVE.L  #GND_FALSE, PLYR_ON_GND ; Player if off Ground
-000013FC  4E75                     474      RTS                             ; Return to subroutine
-000013FE                           475  *-----------------------------------------------------------
-000013FE                           476  * Subroutine    : Jump
-000013FE                           477  * Description   : Perform a Jump
-000013FE                           478  *-----------------------------------------------------------
-000013FE                           479  JUMP:
-000013FE  0CB9 00000001 0000187E   480      CMP.L   #GND_TRUE, PLYR_ON_GND
-00001408  6600 0028                481      BNE     JUMP_DONE              ; Must be on ground
-0000140C                           482  
-0000140C  0CB9 00000000 0000186E   483      CMP.L   #0, JUMP_TIMER
-00001416  6600 001A                484      BNE     JUMP_DONE              ; Cooldown still active
-0000141A                           485  
-0000141A  6100 004E                486      BSR     PLAY_JUMP
-0000141E  23FC FFFFFFE7 00001876   487      MOVE.L  #PLYR_JUMP_V, PLYR_VELOCITY
-00001428                           488  
-00001428  23FC 00000064 0000186E   489      MOVE.L  #100, JUMP_TIMER        ; Cooldown length (adjust this)
-00001432                           490  
-00001432                           491  JUMP_DONE:
-00001432  4E75                     492      RTS
-00001434                           493  *-----------------------------------------------------------
-00001434                           494  * Subroutine    : Idle
-00001434                           495  * Description   : Perform a Idle
-00001434                           496  *----------------------------------------------------------- 
-00001434                           497  IDLE:
-00001434  6100 0016                498      BSR     PLAY_RUN                ; Play Run Wav
-00001438  4E75                     499      RTS                             ; Return to subroutine
-0000143A                           500  
-0000143A                           501  *-----------------------------------------------------------
-0000143A                           502  * Subroutines   : Sound Load and Play
-0000143A                           503  * Description   : Initialise game sounds into memory 
-0000143A                           504  * Current Sounds are RUN, JUMP and Opps for Collision
-0000143A                           505  *-----------------------------------------------------------
-0000143A                           506  RUN_LOAD:
-0000143A  43F9 000018BB            507      LEA     RUN_WAV,    A1          ; Load Wav File into A1
-00001440  323C 0000                508      MOVE    #RUN_INDEX, D1          ; Assign it INDEX
-00001444  303C 0047                509      MOVE    #71,        D0          ; Load into memory
-00001448  4E4F                     510      TRAP    #15                     ; Trap (Perform action)
-0000144A  4E75                     511      RTS                             ; Return to subroutine
-0000144C                           512  
-0000144C                           513  PLAY_RUN:
-0000144C  323C 0000                514      MOVE    #RUN_INDEX, D1          ; Load Sound INDEX
-00001450  303C 0048                515      MOVE    #72,        D0          ; Play Sound
-00001454  4E4F                     516      TRAP    #15                     ; Trap (Perform action)
-00001456  4E75                     517      RTS                             ; Return to subroutine
-00001458                           518  
-00001458                           519  JUMP_LOAD:
-00001458  43F9 000018B2            520      LEA     JUMP_WAV,   A1          ; Load Wav File into A1
-0000145E  323C 0001                521      MOVE    #JMP_INDEX, D1          ; Assign it INDEX
-00001462  303C 0047                522      MOVE    #71,        D0          ; Load into memory
-00001466  4E4F                     523      TRAP    #15                     ; Trap (Perform action)
-00001468  4E75                     524      RTS                             ; Return to subroutine
-0000146A                           525  
-0000146A                           526  PLAY_JUMP:
-0000146A  323C 0001                527      MOVE    #JMP_INDEX, D1          ; Load Sound INDEX
-0000146E  303C 0048                528      MOVE    #72,        D0          ; Play Sound
-00001472  4E4F                     529      TRAP    #15                     ; Trap (Perform action)
-00001474  4E75                     530      RTS                             ; Return to subroutine
-00001476                           531  
-00001476                           532  OPPS_LOAD:
-00001476  43F9 000018C3            533      LEA     OPPS_WAV,   A1          ; Load Wav File into A1
-0000147C  323C 0002                534      MOVE    #OPPS_INDEX,D1          ; Assign it INDEX
-00001480  303C 0047                535      MOVE    #71,        D0          ; Load into memory
-00001484  4E4F                     536      TRAP    #15                     ; Trap (Perform action)
-00001486  4E75                     537      RTS                             ; Return to subroutine
-00001488                           538  
-00001488                           539  PLAY_OPPS:
-00001488  323C 0002                540      MOVE    #OPPS_INDEX,D1          ; Load Sound INDEX
-0000148C  303C 0048                541      MOVE    #72,        D0          ; Play Sound
-00001490  4E4F                     542      TRAP    #15                     ; Trap (Perform action)
-00001492  4E75                     543      RTS                             ; Return to subroutine
-00001494                           544  
-00001494                           545  *-----------------------------------------------------------
-00001494                           546  * Subroutine    : Draw Player
-00001494                           547  * Description   : Draw Player Square
-00001494                           548  *-----------------------------------------------------------
-00001494                           549  DRAW_PLAYER:
-00001494                           550      ; Set Pixel Colors
-00001494  223C 00FFFFFF            551      MOVE.L  #WHITE,     D1          ; Set Background color
-0000149A  103C 0050                552      MOVE.B  #80,        D0          ; Task for Background Color
-0000149E  4E4F                     553      TRAP    #15                     ; Trap (Perform action)
-000014A0                           554  
-000014A0                           555      ; Set X, Y, Width and Height
-000014A0  2239 00001866            556      MOVE.L  PLAYER_X,   D1          ; X
-000014A6  2439 0000186A            557      MOVE.L  PLAYER_Y,   D2          ; Y
-000014AC  2639 00001866            558      MOVE.L  PLAYER_X,   D3
-000014B2  5083                     559      ADD.L   #PLYR_W_INIT,   D3      ; Width
-000014B4  2839 0000186A            560      MOVE.L  PLAYER_Y,   D4 
-000014BA  5084                     561      ADD.L   #PLYR_H_INIT,   D4      ; Height
-000014BC                           562      
-000014BC                           563      ; Draw Player
-000014BC  103C 0057                564      MOVE.B  #87,        D0          ; Draw Player
-000014C0  4E4F                     565      TRAP    #15                     ; Trap (Perform action)
-000014C2  4E75                     566      RTS                             ; Return to subroutine
-000014C4                           567  
-000014C4                           568  *-----------------------------------------------------------
-000014C4                           569  * Subroutine    : Draw small zombie
-000014C4                           570  * Description   : Draw small zombie Square
-000014C4                           571  *-----------------------------------------------------------
-000014C4                           572  DRAW_SMALLZOMB:
-000014C4                           573      ; Set Pixel Colors
-000014C4  223C 000000FF            574      MOVE.L  #RED,       D1          ; Set Background color
-000014CA  103C 0050                575      MOVE.B  #80,        D0          ; Task for Background Color
-000014CE  4E4F                     576      TRAP    #15                     ; Trap (Perform action)
-000014D0                           577  
-000014D0                           578      ; Set X, Y, Width and Height
-000014D0  2239 00001882            579      MOVE.L  SMALLZOMB_X,    D1          ; X
-000014D6  2439 00001886            580      MOVE.L  SMALLZOMB_Y,    D2          ; Y
-000014DC  2639 00001882            581      MOVE.L  SMALLZOMB_X,    D3
-000014E2  5083                     582      ADD.L   #SMALLZOMB_W_INIT,   D3      ; Width
-000014E4  2839 00001886            583      MOVE.L  SMALLZOMB_Y,    D4 
-000014EA  5084                     584      ADD.L   #SMALLZOMB_H_INIT,   D4      ; Height
-000014EC                           585      
-000014EC                           586      ; Draw Enemy    
-000014EC  103C 0057                587      MOVE.B  #87,        D0          ; Draw Enemy
-000014F0  4E4F                     588      TRAP    #15                     ; Trap (Perform action)
-000014F2  4E75                     589      RTS                             ; Return to subroutine
-000014F4                           590      
-000014F4                           591  *-----------------------------------------------------------
-000014F4                           592  * Subroutine    : Draw large zombie
-000014F4                           593  * Description   : Draw large zombie Square
-000014F4                           594  *-----------------------------------------------------------
-000014F4                           595  DRAW_LARGEZOMB:
-000014F4                           596      ; Set Pixel Colors
-000014F4  223C 000000FF            597      MOVE.L  #RED,       D1          ; Set Background color
-000014FA  103C 0050                598      MOVE.B  #80,        D0          ; Task for Background Color
-000014FE  4E4F                     599      TRAP    #15                     ; Trap (Perform action)
-00001500                           600  
-00001500                           601      ; Set X, Y, Width and Height
-00001500  2239 0000188A            602      MOVE.L  LARGEZOMB_X,    D1          ; X
-00001506  2439 0000188E            603      MOVE.L  LARGEZOMB_Y,    D2          ; Y
-0000150C  2639 0000188A            604      MOVE.L  LARGEZOMB_X,    D3
-00001512  0683 00000010            605      ADD.L   #LARGEZOMB_W_INIT,   D3      ; Width
-00001518  2839 0000188E            606      MOVE.L  LARGEZOMB_Y,    D4 
-0000151E  0684 00000010            607      ADD.L   #LARGEZOMB_H_INIT,   D4      ; Height
-00001524                           608      
-00001524                           609      ; Draw Enemy    
-00001524  103C 0057                610      MOVE.B  #87,        D0          ; Draw Enemy
-00001528  4E4F                     611      TRAP    #15                     ; Trap (Perform action)
-0000152A  4E75                     612      RTS                             ; Return to subroutine
-0000152C                           613  
-0000152C                           614      
-0000152C                           615  *-------------------------------------------------
-0000152C                           616  *DRAW_FUEL
-0000152C                           617  *--------------------------------------------------
-0000152C                           618  DRAW_FUEL:
-0000152C                           619      ; Only draw if fuel is active
-0000152C  0CB9 00000001 000018AE   620      CMP.L   #1, FUEL_ACTIVE
-00001536  6600 0036                621      BNE     SKIP_DRAW_FUEL
-0000153A                           622  
-0000153A                           623      ; Set color to GREEN
-0000153A  223C 0000FF00            624      MOVE.L  #GREEN, D1
-00001540  103C 0050                625      MOVE.B  #80, D0           ; Task for background color
-00001544  4E4F                     626      TRAP    #15
-00001546                           627  
-00001546                           628      ; Draw fuel bar rectangle
-00001546  2239 000018A6            629      MOVE.L  FUEL_X, D1         ; X start
-0000154C  2439 000018AA            630      MOVE.L  FUEL_Y, D2         ; Y start
-00001552  2639 000018A6            631      MOVE.L  FUEL_X, D3         ; X end
-00001558  D6B8 0008                632      ADD.L   FUEL_W_INIT, D3           ; Width = current fuel
-0000155C  2839 000018AA            633      MOVE.L  FUEL_Y, D4         ; Y end
-00001562  0684 0000000E            634      ADD.L   #FUEL_H_INIT, D4             ; Height of bar
-00001568                           635      
-00001568                           636      ;Draw fuel
-00001568  103C 0057                637      MOVE.B  #87, D0            ; Draw rectangle
-0000156C  4E4F                     638      TRAP    #15
-0000156E                           639  SKIP_DRAW_FUEL:
-0000156E  4E75                     640      RTS
-00001570                           641  
-00001570                           642  *-----------------------------------------------------------
-00001570                           643  * Subroutine    : Collision Check
-00001570                           644  * Description   : Axis-Aligned Bounding Box Collision Detection
-00001570                           645  * Algorithm checks for overlap on the 4 sides of the Player and 
-00001570                           646  * Enemy rectangles
-00001570                           647  * PLAYER_X <= ENEMY_X + ENEMY_W &&
-00001570                           648  * PLAYER_X + PLAYER_W >= ENEMY_X &&
-00001570                           649  * PLAYER_Y <= ENEMY_Y + ENEMY_H &&
-00001570                           650  * PLAYER_H + PLAYER_Y >= ENEMY_Y
-00001570                           651  *-----------------------------------------------------------
-00001570                           652  CHECK_COLLISIONS:
-00001570                           653  
-00001570                           654  ; -----------------------------
-00001570                           655  ; Check Small Zombie Collision
-00001570                           656  ; -----------------------------
-00001570  4281                     657      CLR.L   D1
-00001572  4282                     658      CLR.L   D2
-00001574                           659  
-00001574                           660  ; X-axis: PLAYER_X <= SMALLZOMB_X + WIDTH
-00001574  2239 00001866            661      MOVE.L  PLAYER_X, D1
-0000157A  2439 00001882            662      MOVE.L  SMALLZOMB_X, D2
-00001580  D4B8 0008                663      ADD.L   SMALLZOMB_W_INIT, D2
-00001584  B481                     664      CMP.L   D1, D2
-00001586  6E00 004C                665      BGT     CHECK_LARGEZOMB_COLLISION  ; skip small zombie if no overlap
-0000158A                           666  
-0000158A                           667  ; X-axis: PLAYER_X + PLAYER_W >= SMALLZOMB_X
-0000158A  2239 00001866            668      MOVE.L  PLAYER_X, D1
-00001590  D2B8 0008                669      ADD.L   PLYR_W_INIT, D1
-00001594  2439 00001882            670      MOVE.L  SMALLZOMB_X, D2
-0000159A  B481                     671      CMP.L   D1, D2
-0000159C  6D00 0036                672      BLT     CHECK_LARGEZOMB_COLLISION  ; skip small zombie if no overlap
-000015A0                           673  
-000015A0                           674  ; Y-axis: PLAYER_Y <= SMALLZOMB_Y + HEIGHT
-000015A0  2239 0000186A            675      MOVE.L  PLAYER_Y, D1
-000015A6  2439 00001886            676      MOVE.L  SMALLZOMB_Y, D2
-000015AC  D4B8 0008                677      ADD.L   SMALLZOMB_H_INIT, D2
-000015B0  B481                     678      CMP.L   D1, D2
-000015B2  6E00 0020                679      BGT     CHECK_LARGEZOMB_COLLISION  ; skip small zombie if no overlap
-000015B6                           680  
-000015B6                           681  ; Y-axis: PLAYER_Y + PLAYER_H >= SMALLZOMB_Y
-000015B6  2239 0000186A            682      MOVE.L  PLAYER_Y, D1
-000015BC  D2B8 0008                683      ADD.L   PLYR_H_INIT, D1
-000015C0  2439 00001886            684      MOVE.L  SMALLZOMB_Y, D2
-000015C6  B481                     685      CMP.L   D1, D2
-000015C8  6D00 000A                686      BLT     CHECK_LARGEZOMB_COLLISION  ; skip small zombie if no overlap
-000015CC                           687  
-000015CC                           688  ; Collision confirmed!
-000015CC  6100 0114                689      BSR     SMALLZOMB_COLLISION
-000015D0  6000 0102                690      BRA     COLLISION_CHECK_DONE
-000015D4                           691  
-000015D4                           692  ; -----------------------------
-000015D4                           693  ; Check Large Zombie Collision
-000015D4                           694  ; -----------------------------
-000015D4                           695      CHECK_LARGEZOMB_COLLISION:
-000015D4  4281                     696      CLR.L   D1
-000015D6  4282                     697      CLR.L   D2
-000015D8                           698  
-000015D8                           699  ; X-axis: PLAYER_X <= LARGEZOMB_X + WIDTH
-000015D8  2239 00001866            700      MOVE.L  PLAYER_X, D1
-000015DE  2439 0000188A            701      MOVE.L  LARGEZOMB_X, D2
-000015E4  D4B8 0010                702      ADD.L   LARGEZOMB_W_INIT, D2
-000015E8  B481                     703      CMP.L   D1, D2
-000015EA  6E00 0048                704      BGT     CHECK_FUEL_COLLISION  ; skip if no overlap
-000015EE                           705  
-000015EE                           706  ; X-axis: PLAYER_X + PLAYER_W >= LARGEZOMB_X
-000015EE  2239 00001866            707      MOVE.L  PLAYER_X, D1
-000015F4  D2B8 0008                708      ADD.L   PLYR_W_INIT, D1
-000015F8  2439 0000188A            709      MOVE.L  LARGEZOMB_X, D2
-000015FE  B481                     710      CMP.L   D1, D2
-00001600  6D00 0032                711      BLT     CHECK_FUEL_COLLISION  ; skip if no overlap
-00001604                           712  
-00001604                           713  ; Y-axis: PLAYER_Y <= LARGEZOMB_Y + HEIGHT
-00001604  2239 0000186A            714      MOVE.L  PLAYER_Y, D1
-0000160A  2439 0000188E            715      MOVE.L  LARGEZOMB_Y, D2
-00001610  D4B8 0010                716      ADD.L   LARGEZOMB_H_INIT, D2
-00001614  B481                     717      CMP.L   D1, D2
-00001616  6E00 001C                718      BGT     CHECK_FUEL_COLLISION  ; skip if no overlap
-0000161A                           719  
-0000161A                           720  ; Y-axis: PLAYER_Y + PLAYER_H >= LARGEZOMB_Y
-0000161A  2239 0000186A            721       MOVE.L  PLAYER_Y, D1
-00001620  D2B8 0008                722      ADD.L   PLYR_H_INIT, D1
-00001624  2439 0000188E            723      MOVE.L  LARGEZOMB_Y, D2
-0000162A  B481                     724      CMP.L   D1, D2
-0000162C  6D00 0006                725      BLT     CHECK_FUEL_COLLISION  ; skip if no overlap
-00001630                           726  
-00001630                           727     ; Collision confirmed!
-00001630  6100 00DC                728     BSR     LARGEZOMB_COLLISION
-00001634                           729  
-00001634                           730  ; -----------------------------
-00001634                           731  ; Check Fuel Collision
-00001634                           732  ; -----------------------------
-00001634                           733  CHECK_FUEL_COLLISION:
-00001634                           734  ; ... your existing fuel collision code ...
-00001634                           735      
-00001634                           736  CHECK_FUEL_COLLISION:
-00001634                           737  
-00001634  0CB9 00000001 000018AE   738      CMP.L   #1, FUEL_ACTIVE          ; Is the fuel currently visible?
-0000163E  6600 0094                739      BNE     COLLISION_CHECK_DONE     ; If not active, skip collision check
-00001642                           740  
-00001642  4281                     741      CLR.L   D1                        ; Clear D1 for calculations
-00001644  4282                     742      CLR.L   D2                        ; Clear D2 for calculations
-00001646                           743  
-00001646                           744  
-00001646                           745      ; Check X-axis overlap
-00001646  2239 00001866            746      MOVE.L  PLAYER_X, D1              ; Load player X position
-0000164C  2439 000018A6            747      MOVE.L  FUEL_X, D2                ; Load fuel X position
-00001652  D4B8 0008                748      ADD.L   FUEL_W_INIT, D2           ; Add fuel width to get right edge
-00001656  B481                     749      CMP.L   D1, D2                     ; Compare left side of player with right side of fuel
-00001658  6F00 0006                750      BLE     FUEL_X2_CHECK              ; If player left <= fuel right, continue X check
-0000165C  6000 0076                751      BRA     COLLISION_CHECK_DONE       ; Otherwise, no collision
-00001660                           752  
-00001660                           753  FUEL_X2_CHECK:
-00001660                           754      ; Check second X-axis overlap: PLAYER_X + PLAYER_W_INIT >= FUEL_X
-00001660  D2B8 0008                755      ADD.L   PLYR_W_INIT, D1           ; Add player width to get right side of player
-00001664  2439 000018A6            756      MOVE.L  FUEL_X, D2                ; Reload fuel X
-0000166A  B481                     757      CMP.L   D1, D2                     ; Compare right side of player to left side of fuel
-0000166C  6C00 0006                758      BGE     FUEL_Y1_CHECK              ; If player right >= fuel left, continue Y check
-00001670  6000 0062                759      BRA     COLLISION_CHECK_DONE       ; Otherwise, no collision
-00001674                           760  
-00001674                           761  FUEL_Y1_CHECK:
-00001674                           762      ; Check Y-axis overlap: PLAYER_Y <= FUEL_Y + FUEL_H_INIT
-00001674  2239 0000186A            763      MOVE.L  PLAYER_Y, D1              ; Load player Y position
-0000167A  2439 000018AA            764      MOVE.L  FUEL_Y, D2                ; Load fuel Y position
-00001680  D4B8 000E                765      ADD.L   FUEL_H_INIT, D2           ; Add fuel height to get bottom of fuel
-00001684  B481                     766      CMP.L   D1, D2                     ; Compare top of player with bottom of fuel
-00001686  6F00 0006                767      BLE     FUEL_Y2_CHECK              ; If player top <= fuel bottom, continue Y check
-0000168A  6000 0048                768      BRA     COLLISION_CHECK_DONE       ; Otherwise, no collision
-0000168E                           769  
-0000168E                           770  FUEL_Y2_CHECK:
-0000168E                           771      ; Check second Y-axis overlap
-0000168E  D2B8 0008                772      ADD.L   PLYR_H_INIT, D1           ; Add player height to get bottom of player
-00001692  2439 000018AA            773      MOVE.L  FUEL_Y, D2                ; Reload fuel Y
-00001698  B481                     774      CMP.L   D1, D2                     ; Compare bottom of player with top of fuel
-0000169A  6C00 0006                775      BGE     FUEL_COLLECTED             ; If overlap confirmed, fuel collected
-0000169E  6000 0034                776      BRA     COLLISION_CHECK_DONE       ; Otherwise, no collision
-000016A2                           777  
-000016A2                           778  FUEL_COLLECTED:
-000016A2                           779      ;Fuel collected, update fuel and hide
-000016A2  2239 0000189A            780      MOVE.L  FUEL, D1                  ; Load current fuel amount
-000016A8  0681 0000000F            781      ADD.L   #15, D1                   ; Add 15 fuel (adjustable)
-000016AE  B2BC 00000064            782      CMP.L   #FUEL_MAX,  D1                   ;check if it goes over max
-000016B4  6F00 0004                783      BLE     FUEL_OK                     ;if fuel is is <= 100, then ok
-000016B8  7264                     784      MOVE.L  #FUEL_MAX,  D1                ;otherwise stay to 100
-000016BA                           785  FUEL_OK:
-000016BA  23C1 0000189A            786      MOVE.L  D1, FUEL
-000016C0  23FC 00000000 000018AE   787      MOVE.L  #0, FUEL_ACTIVE           ; Hide fuel until next respawn
-000016CA  42B9 000018A2            788      CLR.L   FUEL_RESPAWN_TIMER        ; Reset respawn timer
-000016D0  6000 0002                789      BRA     COLLISION_CHECK_DONE      ; Finish fuel collision check
-000016D4                           790  
-000016D4                           791  COLLISION_CHECK_DONE:
-000016D4                           792      ; Continue normal collision logic
-000016D4  D2B9 00001872            793      ADD.L   PLAYER_SCORE, D1          ; Update player score
-000016DA  23C1 00001872            794      MOVE.L  D1, PLAYER_SCORE
-000016E0  4E75                     795      RTS                                ; Return from subroutine
-000016E2                           796  ; ENEMY COLLISION RESPONSE
-000016E2                           797  
-000016E2                           798  SMALLZOMB_COLLISION:
-000016E2  6100 FDA4                799      BSR     PLAY_OPPS
-000016E6  23FC 00000000 00001872   800      MOVE.L  #0, PLAYER_SCORE
-000016F0                           801      ;small zombie kill count
-000016F0                           802      
-000016F0  2239 00001896            803      MOVE.L  KILL_COUNT, D1
-000016F6  5281                     804      ADD.L   #1, D1
-000016F8  23C1 00001896            805      MOVE.L  D1, KILL_COUNT
-000016FE                           806      ;reset small zombie psoiton
-000016FE                           807      
-000016FE  3239 0000185E            808      MOVE.W  SCREEN_W, D1
-00001704  23C1 00001882            809      MOVE.L  D1, SMALLZOMB_X
-0000170A  6000 FF28                810      BRA     CHECK_FUEL_COLLISION
-0000170E                           811      
-0000170E                           812  LARGEZOMB_COLLISION:
-0000170E  6100 FD78                813      BSR     PLAY_OPPS
-00001712                           814      ; Reduce hull integrity
-00001712  2239 00001892            815      MOVE.L  HULL_INTEGRITY, D1
-00001718  0481 0000000A            816      SUB.L   #10, D1           ; Damage value
-0000171E  B2BC 00000000            817      CMP.L   #0, D1
-00001724  6C00 0004                818      BGE     HULL_OK
-00001728  7200                     819      MOVE.L  #0, D1            ; Hull cannot go below 0
-0000172A                           820  HULL_OK:
-0000172A  23C1 00001892            821      MOVE.L  D1, HULL_INTEGRITY
-00001730                           822  
-00001730                           823      ; Reset large zombie X position
-00001730  3239 0000185E            824      MOVE.W  SCREEN_W, D1
-00001736  23C1 0000188A            825      MOVE.L  D1, LARGEZOMB_X
-0000173C  6000 FEF6                826      BRA     CHECK_FUEL_COLLISION    
-00001740                           827      
-00001740                           828  *-----------------------------------------------------------
-00001740                           829  * Subroutine    : EXIT
-00001740                           830  * Description   : Exit message and End Game
-00001740                           831  *-----------------------------------------------------------
-00001740                           832  EXIT:
-00001740                           833      ; Show if Exiting is Running
-00001740  103C 000B                834      MOVE.B  #TC_CURSR_P,D0          ; Set Cursor Position
-00001744  323C 4004                835      MOVE.W  #$4004,     D1          ; Col 40, Row 1
-00001748  4E4F                     836      TRAP    #15                     ; Trap (Perform action)
-0000174A  43F9 00001851            837      LEA     EXIT_MSG,   A1          ; Exit
-00001750  303C 000D                838      MOVE    #13,        D0          ; No Line feed
-00001754  4E4F                     839      TRAP    #15                     ; Trap (Perform action)
-00001756  103C 0009                840      MOVE.B  #TC_EXIT,   D0          ; Exit Code
-0000175A  4E4F                     841      TRAP    #15                     ; Trap (Perform action)
-0000175C  FFFF FFFF                842      SIMHALT
-00001760                           843  
-00001760                           844  *-----------------------------------------------------------
-00001760                           845  * Section       : Messages
-00001760                           846  * Description   : Messages to Print on Console, names should be
-00001760                           847  * self documenting
-00001760                           848  *-----------------------------------------------------------
-00001760= 2A 2A 2A 20 57 45 ...    849  GAME_TITLE_MSG DC.B '*** WELCOME TO THE GAME ***',0
-0000177C= 50 72 65 73 73 20 ...    850  START_MSG      DC.B 'Press SPACE to Start...',0
-00001794= 53 63 6F 72 65 20 ...    851  SCORE_MSG       DC.B    'Score : ', 0       ; Score Message
-0000179D= 4B 65 79 43 6F 64 ...    852  KEYCODE_MSG     DC.B    'KeyCode : ', 0     ; Keycode Message
-000017A8= 4A 75 6D 70 2E 2E ...    853  JUMP_MSG        DC.B    'Jump....', 0       ; Jump Message
-000017B1                           854  
-000017B1= 4B 69 6C 6C 73 3A ...    855  KILL_MSG        DC.B    'Kills: ', 0        ; Kill message
-000017B9= 4F 75 74 20 6F 66 ...    856  FUEL_MSG        DC.B    'Out of Fuel!', 0   ; Fuel message
-000017C6= 48 55 4C 4C 3A 20 00     857  HULL_MSG        DC.B    'HULL: ',0
-000017CD= 46 75 65 6C 3A 20 00     858  FUEL_MSG_LABEL  DC.B    'Fuel: ', 0
-000017D4= 48 75 6C 6C 20 49 ...    859  HULL_INTEGRITY_LABEL    DC.B    'Hull Integrity: ', 0
-000017E5= 49 64 6C 65 2E 2E ...    860  IDLE_MSG        DC.B    'Idle....', 0       ; Idle Message
-000017EE= 55 70 64 61 74 65 ...    861  UPDATE_MSG      DC.B    'Update....', 0     ; Update Message
-000017F9= 44 72 61 77 2E 2E ...    862  DRAW_MSG        DC.B    'Draw....', 0       ; Draw Message
-00001802                           863  
-00001802= 58 3A 00                 864  X_MSG           DC.B    'X:', 0             ; X Position Message
-00001805= 59 3A 00                 865  Y_MSG           DC.B    'Y:', 0             ; Y Position Message
-00001808= 56 3A 00                 866  V_MSG           DC.B    'V:', 0             ; Velocity Position Message
-0000180B= 47 3A 00                 867  G_MSG           DC.B    'G:', 0             ; Gravity Position Message
-0000180E= 47 4E 44 3A 00           868  GND_MSG         DC.B    'GND:', 0           ; On Ground Position Message
-00001813                           869  
-00001813                           870  
-00001813= 2A 2A 2A 20 47 41 ...    871  GAME_OVER_MSG DC.B '*** GAME OVER ***',0
-00001825= 50 72 65 73 73 20 ...    872  RESTART_MSG   DC.B 'Press SPACE to Restart',0
-0000183C= 50 72 65 73 73 20 ...    873  EXIT_GAME_MSG DC.B 'Press ESCAPE to Exit',0
-00001851= 45 78 69 74 69 6E ...    874  EXIT_MSG        DC.B    'Exiting....', 0    ; Exit Message
-0000185D                           875  
-0000185D                           876  *-----------------------------------------------------------
-0000185D                           877  * Section       : Graphic Colors
-0000185D                           878  * Description   : Screen Pixel Color
-0000185D                           879  *-----------------------------------------------------------
-0000185D  =00FFFFFF                880  WHITE           EQU     $00FFFFFF   ;white color for player
-0000185D  =000000FF                881  RED             EQU     $000000FF   ;red color for zombies
-0000185D  =0000FF00                882  GREEN           EQU     $0000FF00  ; Green color for fuel
-0000185D  =00808080                883  GREY            EQU     $808080     ;grey color for repair kit 
-0000185D                           884  
-0000185D                           885  *-----------------------------------------------------------
-0000185D                           886  * Section       : Screen Size
-0000185D                           887  * Description   : Screen Width and Height
-0000185D                           888  *-----------------------------------------------------------
-0000185E                           889  SCREEN_W        DS.W    01  ; Reserve Space for Screen Width
-00001860                           890  SCREEN_H        DS.W    01  ; Reserve Space for Screen Height
-00001862                           891  
-00001862                           892  *-----------------------------------------------------------
-00001862                           893  * Section       : Keyboard Input
-00001862                           894  * Description   : Used for storing Keypresses
-00001862                           895  *-----------------------------------------------------------
-00001862                           896  CURRENT_KEY     DS.L    01  ; Reserve Space for Current Key Pressed
-00001866                           897  
-00001866                           898  *-----------------------------------------------------------
-00001866                           899  * Section       : Character Positions
-00001866                           900  * Description   : Player and Enemy Position Memory Locations
-00001866                           901  *-----------------------------------------------------------
-00001866                           902  PLAYER_X        DS.L    01  ; Reserve Space for Player X Position
-0000186A                           903  PLAYER_Y        DS.L    01  ; Reserve Space for Player Y Position
-0000186E                           904  JUMP_TIMER      DS.L    01  ; Jump cooldown timer
-00001872                           905  PLAYER_SCORE    DS.L    01  ; Reserve Space for Player Score
-00001876                           906  
-00001876                           907  PLYR_VELOCITY   DS.L    01  ; Reserve Space for Player Velocity
-0000187A                           908  PLYR_GRAVITY    DS.L    01  ; Reserve Space for Player Gravity
-0000187E                           909  PLYR_ON_GND     DS.L    01  ; Reserve Space for Player on Ground
-00001882                           910  
-00001882                           911  SMALLZOMB_X     DS.L    01  ; Reserve Space for small zombie X Position
-00001886                           912  SMALLZOMB_Y     DS.L    01  ; Reserve Space for small zombie Y Position
-0000188A                           913  
-0000188A                           914  LARGEZOMB_X     DS.L    01  ; Reserve Space for large zombie X Position
-0000188E                           915  LARGEZOMB_Y     DS.L    01  ; Reserve Space for large zombie Y Position
-00001892                           916  A
-00001892= 00000001                 917  HULL_INTEGRITY  DC.L    01      ;
-00001896                           918  
-00001896                           919  KILL_COUNT      DS.L    01  ; reserve space for kill counter
-0000189A                           920  FUEL            DS.L    01  ; Player fuel
-0000189E                           921  FUEL_TIMER      DS.L    01   ; Counts frames for fuel decrease
-000018A2                           922  FUEL_RESPAWN_TIMER   DS.L   1
-000018A6                           923  
-000018A6                           924  FUEL_X         DS.L  1  ; Fuel X position
-000018AA                           925  FUEL_Y         DS.L  1  ; Fuel Y position
-000018AE                           926  FUEL_ACTIVE    DS.L  1  ; 1 if visible, 0 if not
-000018B2  =0000000A                927  FUEL_AMOUNT    EQU    10 ; How much fuel is restored when collected
-000018B2                           928  
-000018B2                           929  *-----------------------------------------------------------
-000018B2                           930  * Section       : Sounds
-000018B2                           931  * Description   : Sound files, which are then loaded and given
-000018B2                           932  * an address in memory, they take a longtime to process and play
-000018B2                           933  * so keep the files small. Used https://voicemaker.in/ to 
-000018B2                           934  * generate and Audacity to convert MP3 to WAV
-000018B2                           935  *-----------------------------------------------------------
-000018B2= 6A 75 6D 70 2E 77 ...    936  JUMP_WAV        DC.B    'jump.wav',0        ; Jump Sound
-000018BB= 72 75 6E 2E 77 61 ...    937  RUN_WAV         DC.B    'run.wav',0         ; Run Sound
-000018C3= 6F 70 70 73 2E 77 ...    938  OPPS_WAV        DC.B    'opps.wav',0        ; Collision Opps
-000018CC                           939  
-000018CC                           940      END    START        ; last line of source
+0000100C  =00000020                 69  SPACEBAR    EQU         $20         ; Spacebar ASCII Keycode
+0000100C  =0000001B                 70  ESCAPE      EQU         $1B         ; Escape ASCII Keycode
+0000100C                            71  *-----------------------------------------------------------
+0000100C                            72  * Subroutine : START_MENU
+0000100C                            73  * Description: Display welcome screen and wait for SPACE to start
+0000100C                            74  *-----------------------------------------------------------
+0000100C                            75  
+0000100C                            76  START_MENU:
+0000100C                            77      ; Clear screen
+0000100C  103C 000B                 78      MOVE.B  #TC_CURSR_P, D0
+00001010  323C FF00                 79      MOVE.W  #$FF00, D1
+00001014  4E4F                      80      TRAP    #15
+00001016                            81  
+00001016                            82      ; Set starting row
+00001016  303C 0002                 83      MOVE.W  #2, D0  ; row 2
+0000101A  323C 0014                 84      MOVE.W  #20, D1  ; column 20
+0000101E                            85      ; Display Game Title
+0000101E  103C 000B                 86      MOVE.B  #TC_CURSR_P, D0
+00001022  323C 1402                 87      MOVE.W  #$1402, D1   ; Row 2, Column 20
+00001026  4E4F                      88      TRAP    #15
+00001028  43F9 000018BE             89      LEA     GAME_TITLE_MSG, A1
+0000102E  303C 000D                 90      MOVE    #13, D0
+00001032  4E4F                      91      TRAP    #15
+00001034                            92  
+00001034                            93      ; Display objectives, each 2 rows below previous
+00001034  323C 0004                 94      MOVE.W  #4, D1   ; row 4
+00001038  343C 0014                 95      MOVE.W  #20, D2  ; column 20
+0000103C  103C 000B                 96      MOVE.B  #TC_CURSR_P, D0
+00001040  3201                      97      MOVE.W  D1, D1
+00001042  4E4F                      98      TRAP    #15
+00001044  43F9 00001906             99      LEA     OBJECTIVE_1, A1
+0000104A  303C 000D                100      MOVE    #13, D0
+0000104E  4E4F                     101      TRAP    #15
+00001050                           102  
+00001050  323C 0006                103      MOVE.W  #6, D1   ; row 6
+00001054  343C 0014                104      MOVE.W  #20, D2
+00001058  103C 000B                105      MOVE.B  #TC_CURSR_P, D0
+0000105C  3201                     106      MOVE.W  D1, D1
+0000105E  4E4F                     107      TRAP    #15
+00001060  43F9 00001956            108      LEA     OBJECTIVE_2, A1
+00001066  303C 000D                109      MOVE    #13, D0
+0000106A  4E4F                     110      TRAP    #15
+0000106C                           111  
+0000106C  323C 0008                112      MOVE.W  #8, D1   ; row 8
+00001070  343C 0014                113      MOVE.W  #20, D2
+00001074  103C 000B                114      MOVE.B  #TC_CURSR_P, D0
+00001078  3201                     115      MOVE.W  D1, D1
+0000107A  4E4F                     116      TRAP    #15
+0000107C  43F9 00001995            117      LEA     OBJECTIVE_3, A1
+00001082  303C 000D                118      MOVE    #13, D0
+00001086  4E4F                     119      TRAP    #15
+00001088                           120      
+00001088                           121      ; Display "Press SPACE to start"
+00001088  103C 000B                122      MOVE.B  #TC_CURSR_P, D0
+0000108C  323C 1910                123      MOVE.W  #$1910, D1   ; Row 12, Column 20
+00001090  4E4F                     124      TRAP    #15
+00001092  43F9 000018E1            125      LEA     START_MSG, A1
+00001098  303C 000D                126      MOVE    #13, D0
+0000109C  4E4F                     127      TRAP    #15
+0000109E                           128  WAIT_FOR_START:
+0000109E  103C 0013                129      MOVE.B  #TC_KEYCODE, D0       ; Check key press
+000010A2  4E4F                     130      TRAP    #15
+000010A4  B23C 0020                131      CMP.B   #SPACEBAR, D1          ; Did user press SPACE?
+000010A8  66F4                     132      BNE     WAIT_FOR_START          ; If not, loop again
+000010AA  4E75                     133      RTS                             ; Return to start game
+000010AC                           134      
+000010AC                           135  *-----------------------------------------------------------
+000010AC                           136  * Subroutine    : Initialise
+000010AC                           137  * Description   : Initialise game data into memory such as 
+000010AC                           138  * sounds and screen size
+000010AC                           139  *-----------------------------------------------------------
+000010AC                           140  INITIALISE:
+000010AC                           141      ; Initialise Sounds
+000010AC  6100 045E                142      BSR     RUN_LOAD                ; Load Run Sound into Memory
+000010B0  6100 0478                143      BSR     JUMP_LOAD               ; Load Jump Sound into Memory
+000010B4  6100 0492                144      BSR     OPPS_LOAD               ; Load Opps (Collision) Sound into Memory
+000010B8  6100 04AC                145      BSR     BACKGROUND_LOAD         ; Load Background music into memory
+000010BC                           146      
+000010BC                           147      ; Initialize Kill Counter
+000010BC  4281                     148      CLR.L   D1
+000010BE  23C1 00001B04            149      MOVE.L  D1, KILL_COUNT
+000010C4                           150      
+000010C4                           151      ; Intiailse Hull Integrity
+000010C4  23FC 00000064 00001B00   152      MOVE.L  #100,   HULL_INTEGRITY
+000010CE                           153      
+000010CE  42B9 00001AD4            154      CLR.L   ZOMBIE_SOUND_ACTIVE    ; 0 = zombie sound not playing
+000010D4                           155      
+000010D4                           156      ; Screen Size
+000010D4  103C 0021                157      MOVE.B  #TC_SCREEN, D0          ; access screen information
+000010D8  7200                     158      MOVE.L  #TC_S_SIZE, D1          ; placing 0 in D1 triggers loading screen size information
+000010DA  4E4F                     159      TRAP    #15                     ; interpret D0 and D1 for screen size
+000010DC  33C1 00001AAA            160      MOVE.W  D1,         SCREEN_H    ; place screen height in memory location
+000010E2  4841                     161      SWAP    D1                      ; Swap top and bottom word to retrive screen size
+000010E4  33C1 00001AA8            162      MOVE.W  D1,         SCREEN_W    ; place screen width in memory location
+000010EA                           163      
+000010EA                           164      ; Initialize building off the right side of the screen
+000010EA  3239 00001AA8            165      MOVE.W SCREEN_W, D1
+000010F0  23C1 00001AE0            166      MOVE.L D1, BUILDING_X
+000010F6                           167  
+000010F6                           168      ; Place the Player at the left
+000010F6  23FC 00000064 00001AB0   169      MOVE.L  #100,        PLAYER_X     ; Start player near left side
+00001100                           170  
+00001100  4281                     171      CLR.L   D1                      ; Clear contents of D1 (XOR is faster)
+00001102  3239 00001AAA            172      MOVE.W  SCREEN_H,   D1          ; Place Screen width in D1
+00001108  82FC 0002                173      DIVU    #02,        D1          ; divide by 2 for center on Y Axis
+0000110C  23C1 00001AB4            174      MOVE.L  D1,         PLAYER_Y    ; Players Y Position
+00001112                           175      
+00001112                           176      ;Road
+00001112  2239 00001AB4            177      MOVE.L PLAYER_Y, D1
+00001118  5081                     178      ADD.L #PLYR_H_INIT, D1       ; Road right under player
+0000111A  23C1 00001AE8            179      MOVE.L D1, ROAD_Y
+00001120                           180      
+00001120                           181      ;--- Place building on top of road ---
+00001120  2239 00001AE8            182      MOVE.L ROAD_Y, D1            ; Get road Y position
+00001126  0481 000000C8            183      SUB.L #BUILDING_H, D1        ; Building stands on road
+0000112C  23C1 00001AE4            184      MOVE.L D1, BUILDING_Y        ; Store building Y
+00001132                           185  
+00001132                           186      ; Initialise Player Score
+00001132  4281                     187      CLR.L   D1                      ; Clear contents of D1 (XOR is faster)
+00001134  7200                     188      MOVE.L  #00,        D1          ; Init Score
+00001136  23C1 00001ABC            189      MOVE.L  D1,         PLAYER_SCORE
+0000113C                           190      
+0000113C  42B9 00001AB8            191      CLR.L   JUMP_TIMER
+00001142                           192  
+00001142                           193      ; Initialise Player Velocity
+00001142  4281                     194      CLR.L   D1                      ; Clear contents of D1 (XOR is faster)
+00001144  123C 0000                195      MOVE.B  #PLYR_DFLT_V,D1         ; Init Player Velocity
+00001148  23C1 00001AC0            196      MOVE.L  D1,         PLYR_VELOCITY
+0000114E                           197  
+0000114E                           198      ; Initialise Player Gravity
+0000114E  4281                     199      CLR.L   D1                      ; Clear contents of D1 (XOR is faster)
+00001150  7202                     200      MOVE.L  #PLYR_DFLT_G,D1         ; Init Player Gravity
+00001152  23C1 00001AC4            201      MOVE.L  D1,         PLYR_GRAVITY
+00001158                           202  
+00001158                           203      ; Initialize Player on Ground
+00001158  23FC 00000001 00001AC8   204      MOVE.L  #GND_TRUE,  PLYR_ON_GND ; Init Player on Ground
+00001162                           205  
+00001162                           206      ; Initial Position for small zombie
+00001162  4281                     207      CLR.L   D1                      ; Clear contents of D1 (XOR is faster)
+00001164  3239 00001AA8            208      MOVE.W  SCREEN_W,   D1          ; Place Screen width in D1
+0000116A  23C1 00001ACC            209      MOVE.L  D1,         SMALLZOMB_X     ; Enemy X Position
+00001170                           210  
+00001170  4281                     211      CLR.L   D1                      ; Clear contents of D1 (XOR is faster)
+00001172  3239 00001AAA            212      MOVE.W  SCREEN_H,   D1          ; Place Screen width in D1
+00001178  82FC 0002                213      DIVU    #02,        D1          ; divide by 2 for center on Y Axis
+0000117C  23C1 00001AD0            214      MOVE.L  D1,         SMALLZOMB_Y     ; Enemy Y Position
+00001182                           215      
+00001182                           216      ; Place large zombie on top of road
+00001182  2239 00001AB4            217      MOVE.L PLAYER_Y, D1             ; top of player
+00001188  23C1 00001ADC            218      MOVE.L D1, LARGEZOMB_Y          ; top of zombie
+0000118E                           219      
+0000118E                           220      ; Initialize Fuel
+0000118E  23FC 00000064 00001B08   221      MOVE.L  #100, FUEL       ; Start with 100 fuel units
+00001198  42B9 00001B0C            222      CLR.L   FUEL_TIMER
+0000119E                           223  
+0000119E                           224      ;Initial Position for Fuel
+0000119E  4281                     225      CLR.L   D1
+000011A0  3239 00001AA8            226      MOVE.W  SCREEN_W, D1       ; Start off right side
+000011A6  23C1 00001B14            227      MOVE.L  D1, FUEL_X         ; X position
+000011AC                           228  
+000011AC  4281                     229      CLR.L   D1
+000011AE  23F9 00001AD0 00001B18   230      MOVE.L  SMALLZOMB_Y, FUEL_Y
+000011B8                           231      
+000011B8  23FC 00000000 00001B1C   232      MOVE.L  #0, FUEL_ACTIVE     ;not visible yet
+000011C2  42B9 00001B10            233      CLR.L   FUEL_RESPAWN_TIMER  ;timer for respawn delay
+000011C8                           234  
+000011C8                           235      ; Enable the screen back buffer(see easy 68k help)
+000011C8  103C 005C                236      MOVE.B  #TC_DBL_BUF,D0          ; 92 Enables Double Buffer
+000011CC  123C 0011                237      MOVE.B  #17,        D1          ; Combine Tasks
+000011D0  4E4F                     238      TRAP    #15                     ; Trap (Perform action)
+000011D2                           239  
+000011D2                           240      ; Clear the screen (see easy 68k help)
+000011D2  103C 000B                241      MOVE.B  #TC_CURSR_P,D0          ; Set Cursor Position
+000011D6  323C FF00                242      MOVE.W  #$FF00,     D1          ; Fill Screen Clear
+000011DA  4E4F                     243      TRAP    #15                     ; Trap (Perform action)
+000011DC                           244  
+000011DC                           245  *-----------------------------------------------------------
+000011DC                           246  * Subroutine    : Game
+000011DC                           247  * Description   : Game including main GameLoop. GameLoop is like
+000011DC                           248  * a while loop in that it runs forever until interupted
+000011DC                           249  * (Input, Update, Draw). The Enemies Run at Player Jump to Avoid
+000011DC                           250  *-----------------------------------------------------------
+000011DC                           251  GAME:
+000011DC  6100 0340                252      BSR     PLAY_RUN                ; Play Run Wav
+000011E0  6100 0396                253      BSR     PLAY_BACKGROUND
+000011E4                           254  GAMELOOP:
+000011E4                           255    
+000011E4                           256      ; Main Gameloop
+000011E4  6100 0014                257      BSR     INPUT                   ; Check Keyboard Input
+000011E8  6100 0052                258      BSR     UPDATE                  ; Update positions and points
+000011EC  6100 029A                259      BSR     IS_PLAYER_ON_GND        ; Check if player is on ground
+000011F0  6100 04CE                260      BSR     CHECK_COLLISIONS        ; Check for Collisions
+000011F4  6100 01DC                261      BSR     DRAW                    ; Draw the Scene
+000011F8  60EA                     262      BRA     GAMELOOP                ; Loop back to GameLoop
+000011FA                           263  
+000011FA                           264  *-----------------------------------------------------------
+000011FA                           265  * Subroutine    : Input
+000011FA                           266  * Description   : Process Keyboard Input
+000011FA                           267  *-----------------------------------------------------------
+000011FA                           268  INPUT:
+000011FA                           269      ; Process Input
+000011FA  4281                     270      CLR.L   D1                      ; Clear Data Register
+000011FC  103C 0013                271      MOVE.B  #TC_KEYCODE,D0          ; Listen for Keys
+00001200  4E4F                     272      TRAP    #15                     ; Trap (Perform action)
+00001202  1401                     273      MOVE.B  D1,         D2          ; Move last key D1 to D2
+00001204  B43C 0000                274      CMP.B   #00,        D2          ; Key is pressed
+00001208  6700 000E                275      BEQ     PROCESS_INPUT ; Process Key
+0000120C  4E4F                     276      TRAP    #15                     ; Trap for Last Key
+0000120E                           277      ; Check if key still pressed
+0000120E  B23C 00FF                278      CMP.B   #$FF,       D1          ; Is it still pressed
+00001212  6700 0004                279      BEQ     PROCESS_INPUT           ; Process Last Key
+00001216  4E75                     280      RTS                             ; Return to subroutine
+00001218                           281  
+00001218                           282  *-----------------------------------------------------------
+00001218                           283  * Subroutine    : Process Input
+00001218                           284  * Description   : Branch based on keys pressed
+00001218                           285  *-----------------------------------------------------------
+00001218                           286  PROCESS_INPUT:
+00001218  23C2 00001AAC            287      MOVE.L  D2,         CURRENT_KEY ; Put Current Key in Memory
+0000121E  0CB9 0000001B 00001AAC   288      CMP.L   #ESCAPE,    CURRENT_KEY ; Is Current Key Escape
+00001228  6700 0674                289      BEQ     EXIT                    ; Exit if Escape
+0000122C  0CB9 00000020 00001AAC   290      CMP.L   #SPACEBAR,  CURRENT_KEY ; Is Current Key Spacebar
+00001236  6700 029E                291      BEQ     JUMP                    ; Jump
+0000123A  4E75                     292      RTS                             ; Return to subroutine
+0000123C                           293  
+0000123C                           294  *-----------------------------------------------------------
+0000123C                           295  * Subroutine    : Update
+0000123C                           296  * Description   : Main update loop update Player and Enemies
+0000123C                           297  *-----------------------------------------------------------
+0000123C                           298  UPDATE:
+0000123C                           299  
+0000123C                           300      ; Decrease jump cooldown if active
+0000123C  0CB9 00000000 00001AB8   301      CMP.L   #0, JUMP_TIMER
+00001246  6700 0008                302      BEQ     SKIP_TIMER_DEC
+0000124A  53B9 00001AB8            303      SUB.L   #1, JUMP_TIMER
+00001250                           304      
+00001250                           305  SKIP_TIMER_DEC:
+00001250                           306      
+00001250  0CB9 00000001 00001B1C   307      CMP.L   #1, FUEL_ACTIVE          ; Is fuel currently visible?
+0000125A  6600 002E                308      BNE     HANDLE_FUEL_RESPAWN      ; If NOT active, handle respawn timer
+0000125E                           309  
+0000125E                           310      ;fuel is active
+0000125E  2239 00001B14            311      MOVE.L  FUEL_X, D1               ; Load current fuel X position
+00001264  5381                     312      SUB.L   #1, D1                   ; Move fuel left by 1 pixel
+00001266  23C1 00001B14            313      MOVE.L  D1, FUEL_X               ; Store new X position
+0000126C                           314  
+0000126C  B2BC 00000000            315      CMP.L   #0, D1                   ; Has fuel gone off left side?
+00001272  6E00 0046                316      BGT     FUEL_DONE                ; If still on screen, finish update
+00001276                           317  
+00001276  23FC 00000000 00001B1C   318      MOVE.L  #0, FUEL_ACTIVE          ; Off screen ? hide fuel
+00001280  42B9 00001B10            319      CLR.L   FUEL_RESPAWN_TIMER       ; Reset respawn timer to 0
+00001286  6000 0032                320      BRA     FUEL_DONE                ; Skip respawn logic for now
+0000128A                           321        
+0000128A                           322      ; fuel is not active
+0000128A                           323  HANDLE_FUEL_RESPAWN:
+0000128A  52B9 00001B10            324      ADD.L   #1, FUEL_RESPAWN_TIMER   ; Increase respawn timer each frame
+00001290  0CB9 000000B4 00001B10   325      CMP.L   #180, FUEL_RESPAWN_TIMER ; Wait about 3 seconds (180 frames at 60fps)
+0000129A  6D00 001E                326      BLT     FUEL_DONE                ; If not reached yet, exit update
+0000129E                           327  
+0000129E                           328       ; Respawn fuel
+0000129E  42B9 00001B10            329      CLR.L   FUEL_RESPAWN_TIMER       ; Reset respawn timer
+000012A4  3239 00001AA8            330      MOVE.W  SCREEN_W, D1             ; Get right side of screen
+000012AA  23C1 00001B14            331      MOVE.L  D1, FUEL_X               ; Place repair at right edge
+000012B0  23FC 00000001 00001B1C   332      MOVE.L  #1, FUEL_ACTIVE          ; Make repair visible again   
+000012BA                           333  FUEL_DONE:
+000012BA                           334  
+000012BA                           335      ; Update the Players Positon based on Velocity and Gravity
+000012BA  4281                     336      CLR.L   D1                      ; Clear contents of D1 (XOR is faster)
+000012BC  2239 00001AC0            337      MOVE.L  PLYR_VELOCITY, D1       ; Fetch Player Velocity
+000012C2  2439 00001AC4            338      MOVE.L  PLYR_GRAVITY, D2        ; Fetch Player Gravity
+000012C8  D282                     339      ADD.L   D2,         D1          ; Add Gravity to Velocity
+000012CA  23C1 00001AC0            340      MOVE.L  D1,         PLYR_VELOCITY ; Update Player Velocity
+000012D0  B2BC 00000002            341      CMP.L   #2, D1
+000012D6  6F00 000A                342      BLE     NO_FALL_LIMIT
+000012DA  7202                     343      MOVE.L  #2, D1
+000012DC  23C1 00001AC0            344      MOVE.L  D1, PLYR_VELOCITY
+000012E2                           345      
+000012E2                           346  NO_FALL_LIMIT:
+000012E2  D2B9 00001AB4            347      ADD.L   PLAYER_Y,   D1          ; Add Velocity to Player
+000012E8  23C1 00001AB4            348      MOVE.L  D1,         PLAYER_Y    ; Update Players Y Position 
+000012EE                           349  
+000012EE                           350     ;-----------------------------------
+000012EE                           351  ; Check SMALL zombie position
+000012EE                           352  ;-----------------------------------
+000012EE                           353  
+000012EE  4281                     354      CLR.L   D1
+000012F0  2239 00001ACC            355      MOVE.L  SMALLZOMB_X, D1      ; Load small zombie X
+000012F6  B2BC 00000000            356      CMP.L   #0, D1               ; Has it reached left side?
+000012FC  6F00 0084                357      BLE     RESET_SMALL_ZOMBIE   ; If yes reset it
+00001300                           358  
+00001300                           359  ;-----------------------------------
+00001300                           360  ; Check LARGE zombie position
+00001300                           361  ;-----------------------------------
+00001300                           362  
+00001300  4281                     363      CLR.L   D1
+00001302  2239 00001AD8            364      MOVE.L  LARGEZOMB_X, D1      ; Load large zombie X
+00001308  B2BC 00000000            365      CMP.L   #0, D1               ; Has it reached left side?
+0000130E  6F00 0094                366      BLE     RESET_LARGE_ZOMBIE   ; If yes reset it
+00001312                           367  
+00001312                           368  ;-----------------------------------
+00001312                           369  ; Move both zombies
+00001312                           370  ;-----------------------------------
+00001312                           371  
+00001312  6100 0056                372      BSR     MOVE_ZOMBIE  
+00001316                           373      
+00001316                           374      ; Move building left
+00001316  53B9 00001AE0            375      SUB.L #1, BUILDING_X               ; Move 1 pixel left
+0000131C                           376      ; Reset building if it is offscreen (like small zombie)
+0000131C  0CB9 00000000 00001AE0   377      CMP.L #0, BUILDING_X
+00001326  6C00 000E                378      BGE SKIP_BUILDING_RESET
+0000132A                           379      ; Offscreen: reset to right side
+0000132A  3239 00001AA8            380      MOVE.W SCREEN_W, D1
+00001330  23C1 00001AE0            381      MOVE.L D1, BUILDING_X
+00001336                           382  
+00001336                           383  SKIP_BUILDING_RESET:
+00001336                           384  
+00001336                           385      ;Fuel Cowuntdown
+00001336  52B9 00001B0C            386      ADD.L   #1, FUEL_TIMER          ; increment timer per update
+0000133C  0CB9 0000003C 00001B0C   387      CMP.L   #60, FUEL_TIMER         ; check if ~1 second passed (adjust if needed)
+00001346  6D00 0020                388      BLT     SKIP_FUEL_DECREMENT     ; if not, skip decrement
+0000134A  53B9 00001B08            389      SUB.L   #1, FUEL                ; decrease fuel by 1
+00001350  42B9 00001B0C            390      CLR.L   FUEL_TIMER              ; reset timer
+00001356  0CB9 00000000 00001B08   391      CMP.L   #0, FUEL
+00001360  6E00 0006                392      BGT     SKIP_GAME_OVER          ; if fuel > 0, skip game over
+00001364  6100 0538                393      BSR     EXIT                     ; fuel is 0 ? end game
+00001368                           394  SKIP_FUEL_DECREMENT:             ; label to continue normal update
+00001368                           395  SKIP_GAME_OVER:
+00001368                           396              
+00001368  4E75                     397      RTS                             ; Return to subroutine  
+0000136A                           398  *-----------------------------------------------------------
+0000136A                           399  * Subroutine    : Move Enemy
+0000136A                           400  * Description   : Move Enemy Right to Left
+0000136A                           401  *-----------------------------------------------------------
+0000136A                           402  MOVE_ZOMBIE:
+0000136A                           403      ;move zombies by X values
+0000136A  55B9 00001ACC            404      SUB.L   #2,        SMALLZOMB_X   
+00001370  57B9 00001AD8            405      SUB.L   #3,        LARGEZOMB_X
+00001376                           406      
+00001376                           407      ;DELAY loop
+00001376  203C 00000BB8            408      MOVE.L  #3000,  D0
+0000137C                           409      
+0000137C                           410  DELAY_LOOP:
+0000137C  5380                     411      SUB.L   #1, D0
+0000137E  66FC                     412      BNE     DELAY_LOOP
+00001380  4E75                     413      RTS
+00001382                           414  *-----------------------------------------------------------
+00001382                           415  * Subroutine    : Reset zombies 
+00001382                           416  * Description   : Reset zombies if to passes 0 to Right of Screen
+00001382                           417  *-----------------------------------------------------------
+00001382                           418  RESET_SMALL_ZOMBIE:
+00001382  4281                     419      CLR.L   D1
+00001384  3239 00001AA8            420      MOVE.W  SCREEN_W, D1          ; Get right side of screen
+0000138A  23C1 00001ACC            421      MOVE.L  D1, SMALLZOMB_X       ; Reset small zombie X position
+00001390                           422  
+00001390                           423      ; Reset Y position to middle of screen
+00001390  4281                     424      CLR.L   D1
+00001392  3239 00001AAA            425      MOVE.W  SCREEN_H, D1
+00001398  82FC 0002                426      DIVU    #2, D1
+0000139C  23C1 00001AD0            427      MOVE.L  D1, SMALLZOMB_Y
+000013A2                           428  
+000013A2  4E75                     429      RTS
+000013A4                           430      
+000013A4                           431  RESET_LARGE_ZOMBIE:
+000013A4  4281                     432      CLR.L   D1
+000013A6  3239 00001AA8            433      MOVE.W  SCREEN_W, D1
+000013AC  0681 0000000A            434      ADD.L   #10, D1              ; Spawn further to the right
+000013B2  23C1 00001AD8            435      MOVE.L  D1, LARGEZOMB_X       ; Reset large zombie X position
+000013B8                           436  
+000013B8                           437      ; Reset Y position to middle of screen
+000013B8  4281                     438      CLR.L   D1
+000013BA  3239 00001AAA            439      MOVE.W  SCREEN_H, D1
+000013C0  82FC 0002                440      DIVU    #2, D1
+000013C4  23C1 00001ADC            441      MOVE.L  D1, LARGEZOMB_Y
+000013CA  23C1 00001ADC            442     MOVE.L D1, LARGEZOMB_Y     ; Store top of zombie
+000013D0                           443  
+000013D0  4E75                     444      RTS
+000013D2                           445      
+000013D2                           446  *----------------------------------------------------------
+000013D2                           447  * Subroutine    : Draw
+000013D2                           448  * Description   : Draw Screen
+000013D2                           449  *-----------------------------------------------------------
+000013D2                           450  DRAW: 
+000013D2                           451      ; Enable back buffer
+000013D2  103C 005E                452      MOVE.B  #94,        D0
+000013D6  4E4F                     453      TRAP    #15
+000013D8                           454  
+000013D8                           455      ; Clear the screen
+000013D8  103C 000B                456      MOVE.B  #TC_CURSR_P,D0          ; Set Cursor Position
+000013DC  323C FF00                457      MOVE.W  #$FF00,     D1          ; Clear contents
+000013E0  4E4F                     458      TRAP    #15                     ; Trap (Perform action)
+000013E2                           459      
+000013E2  6100 02B2                460      BSR     DRAW_ROAD
+000013E6  6100 0276                461      BSR     DRAW_BUILDING
+000013EA  6100 0014                462      BSR     DRAW_PLYR_DATA          ; Draw Draw Score, HUD, Player X and Y
+000013EE  6100 0194                463      BSR     DRAW_PLAYER             ; Draw Player
+000013F2  6100 01C0                464      BSR     DRAW_SMALLZOMB          ; Draw small zombie
+000013F6  6100 01EC                465      BSR     DRAW_LARGEZOMB          ; Draw large zombie
+000013FA                           466      
+000013FA                           467      ;Draw Fuel and Repair Kits
+000013FA  6100 0220                468      BSR     DRAW_FUEL
+000013FE                           469  
+000013FE                           470  
+000013FE  4E75                     471      RTS                             ; Return to subroutine
+00001400                           472  *-----------------------------------------------------------
+00001400                           473  * Subroutine    : Draw Player Data
+00001400                           474  * Description   : Draw Player X, Y, Velocity, Gravity and OnGround
+00001400                           475  *-----------------------------------------------------------
+00001400                           476  DRAW_PLYR_DATA:
+00001400  4281                     477      CLR.L   D1                      ; Clear contents of D1 (XOR is faster)
+00001402                           478  
+00001402                           479      ; Display Kill Counter
+00001402  103C 000B                480      MOVE.B #TC_CURSR_P, D0       ; Set cursor
+00001406  323C 0201                481      MOVE.W #$0201, D1            ; Row 1, Column 2
+0000140A  4E4F                     482      TRAP #15                      ; Position cursor
+0000140C  43F9 000019FB            483      LEA KILL_MSG, A1              ; "Kills: " message
+00001412  303C 000D                484      MOVE #13, D0                  ; No line feed
+00001416  4E4F                     485      TRAP #15                      ; Print message
+00001418                           486  
+00001418  103C 000B                487      MOVE.B #TC_CURSR_P, D0       ; Set cursor
+0000141C  323C 0801                488      MOVE.W #$0801, D1            ; Row 1, Column 8 (after "Kills: ")
+00001420  4E4F                     489      TRAP #15                      ; Position cursor
+00001422  2239 00001B04            490      MOVE.L KILL_COUNT, D1        ; Load kill count
+00001428  103C 0003                491      MOVE.B #03, D0                ; Display as number
+0000142C  4E4F                     492      TRAP #15                      ; Print count
+0000142E                           493  
+0000142E                           494      ; display fuel
+0000142E  103C 000B                495      MOVE.B  #TC_CURSR_P, D0
+00001432  323C 0202                496      MOVE.W  #$0202, D1              ; column 2, row 2
+00001436  4E4F                     497      TRAP    #15
+00001438  43F9 00001A17            498      LEA     FUEL_MSG_LABEL, A1      ; pointer to "Fuel: "
+0000143E  303C 000D                499      MOVE    #13, D0                 ; no linefeed
+00001442  4E4F                     500      TRAP    #15
+00001444                           501  
+00001444  103C 000B                502      MOVE.B  #TC_CURSR_P, D0
+00001448  323C 0902                503      MOVE.W  #$0902, D1              ; column 9, row 2 for value
+0000144C  4E4F                     504      TRAP    #15
+0000144E  2239 00001B08            505      MOVE.L  FUEL, D1                ; current fuel value
+00001454  103C 0003                506      MOVE.B  #03, D0                 ; display as number
+00001458  4E4F                     507      TRAP    #15
+0000145A                           508      
+0000145A                           509      ; display hull integrity
+0000145A  103C 000B                510      MOVE.B  #TC_CURSR_P, D0
+0000145E  323C 0203                511      MOVE.W  #$0203, D1              ; c
+00001462  4E4F                     512      TRAP    #15
+00001464  43F9 00001A1E            513      LEA     HULL_INTEGRITY_LABEL, A1      ; pointer to "Hull Integrity: "
+0000146A  303C 000D                514      MOVE    #13, D0                 ; no linefeed
+0000146E  4E4F                     515      TRAP    #15
+00001470                           516  
+00001470  103C 000B                517      MOVE.B  #TC_CURSR_P, D0
+00001474  323C 1003                518      MOVE.W  #$1003, D1              ; 
+00001478  4E4F                     519      TRAP    #15
+0000147A  2239 00001B00            520      MOVE.L  HULL_INTEGRITY, D1                ; current fuel value
+00001480  103C 0003                521      MOVE.B  #03, D0                 ; display as number
+00001484  4E4F                     522      TRAP    #15
+00001486                           523  
+00001486                           524   
+00001486  4E75                     525      RTS  
+00001488                           526      
+00001488                           527  *-----------------------------------------------------------
+00001488                           528  * Subroutine    : Player is on Ground
+00001488                           529  * Description   : Check if the Player is on or off Ground
+00001488                           530  *-----------------------------------------------------------
+00001488                           531  IS_PLAYER_ON_GND:
+00001488                           532      ; Check if Player is on Ground
+00001488  4281                     533      CLR.L   D1                      ; Clear contents of D1 (XOR is faster)
+0000148A  4282                     534      CLR.L   D2                      ; Clear contents of D2 (XOR is faster)
+0000148C  3239 00001AAA            535      MOVE.W  SCREEN_H,   D1          ; Place Screen width in D1
+00001492  82FC 0002                536      DIVU    #02,        D1          ; divide by 2 for center on Y Axis
+00001496  2439 00001AB4            537      MOVE.L  PLAYER_Y,   D2          ; Player Y Position
+0000149C  B481                     538      CMP.L   D1,         D2        ; Compare middle of Screen with Players Y Position 
+0000149E  6D00 002A                539      BLT     SET_OFF_GROUND           ; The Player is on the Ground Plane
+000014A2  6000 0002                540      BRA     SET_ON_GROUND          ; The Player is off the Ground
+000014A6                           541                                
+000014A6                           542  
+000014A6                           543  
+000014A6                           544  *-----------------------------------------------------------
+000014A6                           545  * Subroutine    : On Ground
+000014A6                           546  * Description   : Set the Player On Ground
+000014A6                           547  *-----------------------------------------------------------
+000014A6                           548  SET_ON_GROUND:
+000014A6  4281                     549      CLR.L   D1                      ; Clear contents of D1 (XOR is faster)
+000014A8  3239 00001AAA            550      MOVE.W  SCREEN_H,   D1          ; Place Screen width in D1
+000014AE  82FC 0002                551      DIVU    #02,        D1          ; divide by 2 for center on Y Axis
+000014B2  23C1 00001AB4            552      MOVE.L  D1,         PLAYER_Y    ; Reset the Player Y Position
+000014B8  42B9 00001AC0            553      CLR.L   PLYR_VELOCITY                     ; Clear contents of D1 (XOR is faster)
+000014BE  23FC 00000001 00001AC8   554      MOVE.L  #GND_TRUE,  PLYR_ON_GND ; Player is on Ground
+000014C8  4E75                     555      RTS
+000014CA                           556  
+000014CA                           557  *-----------------------------------------------------------
+000014CA                           558  * Subroutine    : Off Ground
+000014CA                           559  * Description   : Set the Player Off Ground
+000014CA                           560  *-----------------------------------------------------------
+000014CA                           561  SET_OFF_GROUND:
+000014CA  23FC 00000000 00001AC8   562      MOVE.L  #GND_FALSE, PLYR_ON_GND ; Player if off Ground
+000014D4  4E75                     563      RTS                             ; Return to subroutine
+000014D6                           564  *-----------------------------------------------------------
+000014D6                           565  * Subroutine    : Jump
+000014D6                           566  * Description   : Perform a Jump
+000014D6                           567  *-----------------------------------------------------------
+000014D6                           568  JUMP:
+000014D6  0CB9 00000001 00001AC8   569      CMP.L   #GND_TRUE, PLYR_ON_GND
+000014E0  6600 0028                570      BNE     JUMP_DONE              ; Must be on ground
+000014E4                           571  
+000014E4  0CB9 00000000 00001AB8   572      CMP.L   #0, JUMP_TIMER
+000014EE  6600 001A                573      BNE     JUMP_DONE              ; Cooldown still active
+000014F2                           574  
+000014F2  6100 0048                575      BSR     PLAY_JUMP
+000014F6  23FC FFFFFFE7 00001AC0   576      MOVE.L  #PLYR_JUMP_V, PLYR_VELOCITY
+00001500                           577  
+00001500  23FC 00000064 00001AB8   578      MOVE.L  #100, JUMP_TIMER        ; Cooldown length (adjust this)
+0000150A                           579  
+0000150A                           580  JUMP_DONE:
+0000150A  4E75                     581      RTS
+0000150C                           582  
+0000150C                           583  
+0000150C                           584  *-----------------------------------------------------------
+0000150C                           585  * Subroutines   : Sound Load and Play
+0000150C                           586  * Description   : Initialise game sounds into memory 
+0000150C                           587  * Current Sounds are RUN, JUMP and Opps for Collision
+0000150C                           588  *-----------------------------------------------------------
+0000150C                           589  RUN_LOAD:
+0000150C  43F9 00001B29            590      LEA     RUN_WAV,    A1          ; Load Wav File into A1
+00001512  323C 0000                591      MOVE    #RUN_INDEX, D1          ; Assign it INDEX
+00001516  303C 0047                592      MOVE    #71,        D0          ; Load into memory
+0000151A  4E4F                     593      TRAP    #15                     ; Trap (Perform action)
+0000151C  4E75                     594      RTS                             ; Return to subroutine
+0000151E                           595  
+0000151E                           596  PLAY_RUN:
+0000151E  323C 0000                597      MOVE    #RUN_INDEX, D1          ; Load Sound INDEX
+00001522  303C 0048                598      MOVE    #72,        D0          ; Play Sound
+00001526  4E4F                     599      TRAP    #15                     ; Trap (Perform action)
+00001528  4E75                     600      RTS                             ; Return to subroutine
+0000152A                           601  
+0000152A                           602  JUMP_LOAD:
+0000152A  43F9 00001B20            603      LEA     JUMP_WAV,   A1          ; Load Wav File into A1
+00001530  323C 0001                604      MOVE    #JMP_INDEX, D1          ; Assign it INDEX
+00001534  303C 0047                605      MOVE    #71,        D0          ; Load into memory
+00001538  4E4F                     606      TRAP    #15                     ; Trap (Perform action)
+0000153A  4E75                     607      RTS                             ; Return to subroutine
+0000153C                           608  
+0000153C                           609  PLAY_JUMP:
+0000153C  323C 0001                610      MOVE    #JMP_INDEX, D1          ; Load Sound INDEX
+00001540  303C 0048                611      MOVE    #72,        D0          ; Play Sound
+00001544  4E4F                     612      TRAP    #15                     ; Trap (Perform action)
+00001546  4E75                     613      RTS                             ; Return to subroutine
+00001548                           614  
+00001548                           615  OPPS_LOAD:
+00001548  43F9 00001B31            616      LEA     OPPS_WAV,   A1          ; Load Wav File into A1
+0000154E  323C 0002                617      MOVE    #OPPS_INDEX,D1          ; Assign it INDEX
+00001552  303C 0047                618      MOVE    #71,        D0          ; Load into memory
+00001556  4E4F                     619      TRAP    #15                     ; Trap (Perform action)
+00001558  4E75                     620      RTS                             ; Return to subroutine
+0000155A                           621  
+0000155A                           622  PLAY_OPPS:
+0000155A  323C 0002                623      MOVE    #OPPS_INDEX,D1          ; Load Sound INDEX
+0000155E  303C 0048                624      MOVE    #72,        D0          ; Play Sound
+00001562  4E4F                     625      TRAP    #15                     ; Trap (Perform action)
+00001564  4E75                     626      RTS                             ; Return to subroutine
+00001566                           627      
+00001566                           628  ;-----------------------------
+00001566                           629  ;Background Music routines
+00001566                           630  ;-----------------------------
+00001566                           631  BACKGROUND_LOAD:
+00001566  43F9 00001B3A            632      LEA     BACKGROUND_WAV,    A1       ; Load WAV file pointer
+0000156C  323C 0003                633      MOVE    #BACKGROUND_INDEX, D1       ; Assign it a free index
+00001570  303C 0047                634      MOVE    #71,        D0       ; Load into memory
+00001574  4E4F                     635      TRAP    #15
+00001576  4E75                     636      RTS
+00001578                           637  PLAY_BACKGROUND:
+00001578  323C 0003                638      MOVE    #BACKGROUND_INDEX, D1       ; Load Sound Index
+0000157C  303C 0048                639      MOVE    #72,        D0       ; Play sound
+00001580  4E4F                     640      TRAP    #15
+00001582  4E75                     641      RTS
+00001584                           642      
+00001584                           643  *-----------------------------------------------------------
+00001584                           644  * Subroutine    : Draw Player
+00001584                           645  * Description   : Draw Player Square
+00001584                           646  *-----------------------------------------------------------
+00001584                           647  DRAW_PLAYER:
+00001584                           648      ; Set Pixel Colors
+00001584  223C 00FFFFFF            649      MOVE.L  #WHITE,     D1          ; Set Background color
+0000158A  103C 0050                650      MOVE.B  #80,        D0          ; Task for Background Color
+0000158E  4E4F                     651      TRAP    #15                     ; Trap (Perform action)
+00001590                           652  
+00001590                           653      ; Set X, Y, Width and Height
+00001590  2239 00001AB0            654      MOVE.L  PLAYER_X,   D1          ; X
+00001596  2439 00001AB4            655      MOVE.L  PLAYER_Y,   D2          ; Y
+0000159C  2639 00001AB0            656      MOVE.L  PLAYER_X,   D3
+000015A2  5083                     657      ADD.L   #PLYR_W_INIT,   D3      ; Width
+000015A4  2839 00001AB4            658      MOVE.L  PLAYER_Y,   D4 
+000015AA  5084                     659      ADD.L   #PLYR_H_INIT,   D4      ; Height
+000015AC                           660      
+000015AC                           661      ; Draw Player
+000015AC  103C 0057                662      MOVE.B  #87,        D0          ; Draw Player
+000015B0  4E4F                     663      TRAP    #15                     ; Trap (Perform action)
+000015B2  4E75                     664      RTS                             ; Return to subroutine
+000015B4                           665  
+000015B4                           666  *-----------------------------------------------------------
+000015B4                           667  * Subroutine    : Draw small zombie
+000015B4                           668  * Description   : Draw small zombie Square
+000015B4                           669  *-----------------------------------------------------------
+000015B4                           670  DRAW_SMALLZOMB:
+000015B4                           671      ; Set Pixel Colors
+000015B4  223C 000000FF            672      MOVE.L  #RED,       D1          ; Set Background color
+000015BA  103C 0050                673      MOVE.B  #80,        D0          ; Task for Background Color
+000015BE  4E4F                     674      TRAP    #15                     ; Trap (Perform action)
+000015C0                           675  
+000015C0                           676      ; Set X, Y, Width and Height
+000015C0  2239 00001ACC            677      MOVE.L  SMALLZOMB_X,    D1          ; X
+000015C6  2439 00001AD0            678      MOVE.L  SMALLZOMB_Y,    D2          ; Y
+000015CC  2639 00001ACC            679      MOVE.L  SMALLZOMB_X,    D3
+000015D2  5083                     680      ADD.L   #SMALLZOMB_W_INIT,   D3      ; Width
+000015D4  2839 00001AD0            681      MOVE.L  SMALLZOMB_Y,    D4 
+000015DA  5084                     682      ADD.L   #SMALLZOMB_H_INIT,   D4      ; Height
+000015DC                           683      
+000015DC                           684      ; Draw Enemy    
+000015DC  103C 0057                685      MOVE.B  #87,        D0          ; Draw Enemy
+000015E0  4E4F                     686      TRAP    #15                     ; Trap (Perform action)
+000015E2  4E75                     687      RTS                             ; Return to subroutine
+000015E4                           688      
+000015E4                           689  *-----------------------------------------------------------
+000015E4                           690  * Subroutine    : Draw large zombie
+000015E4                           691  * Description   : Draw large zombie Square
+000015E4                           692  *-----------------------------------------------------------
+000015E4                           693  DRAW_LARGEZOMB:
+000015E4                           694      ; Set Pixel Colors
+000015E4  223C 000000FF            695      MOVE.L  #RED,       D1          ; Set Background color
+000015EA  103C 0050                696      MOVE.B  #80,        D0          ; Task for Background Color
+000015EE  4E4F                     697      TRAP    #15                     ; Trap (Perform action)
+000015F0                           698  
+000015F0                           699      ; Set X, Y, Width and Height
+000015F0  2239 00001AD8            700      MOVE.L  LARGEZOMB_X,    D1          ; X
+000015F6  2439 00001ADC            701      MOVE.L  LARGEZOMB_Y,    D2          ; Y
+000015FC  2639 00001AD8            702      MOVE.L  LARGEZOMB_X,    D3
+00001602  0683 00000010            703      ADD.L   #LARGEZOMB_W_INIT,   D3      ; Width
+00001608  2839 00001ADC            704      MOVE.L  LARGEZOMB_Y,    D4 
+0000160E  0684 00000016            705      ADD.L   #LARGEZOMB_H_INIT,   D4      ; Height
+00001614                           706      
+00001614                           707      ; Draw Enemy    
+00001614  103C 0057                708      MOVE.B  #87,        D0          ; Draw Enemy
+00001618  4E4F                     709      TRAP    #15                     ; Trap (Perform action)
+0000161A  4E75                     710      RTS                             ; Return to subroutine
+0000161C                           711  
+0000161C                           712      
+0000161C                           713  *-------------------------------------------------
+0000161C                           714  *DRAW_FUEL
+0000161C                           715  *--------------------------------------------------
+0000161C                           716  DRAW_FUEL:
+0000161C                           717      ; Only draw if fuel is active
+0000161C  0CB9 00000001 00001B1C   718      CMP.L   #1, FUEL_ACTIVE
+00001626  6600 0034                719      BNE     SKIP_DRAW_FUEL
+0000162A                           720  
+0000162A                           721      ; Set color to GREEN
+0000162A  223C 0000FF00            722      MOVE.L  #GREEN, D1
+00001630  103C 0050                723      MOVE.B  #80, D0           ; Task for background color
+00001634  4E4F                     724      TRAP    #15
+00001636                           725  
+00001636                           726      ; Draw fuel bar rectangle
+00001636  2239 00001B14            727      MOVE.L  FUEL_X, D1         ; X start
+0000163C  2439 00001B18            728      MOVE.L  FUEL_Y, D2         ; Y start
+00001642  2639 00001B14            729      MOVE.L  FUEL_X, D3         ; X end
+00001648  5083                     730      ADD.L   #FUEL_W_INIT, D3           ; Width = current fuel
+0000164A  2839 00001B18            731      MOVE.L  FUEL_Y, D4         ; Y end
+00001650  0684 0000000E            732      ADD.L   #FUEL_H_INIT, D4             ; Height of bar
+00001656                           733      
+00001656                           734      ;Draw fuel
+00001656  103C 0057                735      MOVE.B  #87, D0            ; Draw rectangle
+0000165A  4E4F                     736      TRAP    #15
+0000165C                           737  SKIP_DRAW_FUEL:
+0000165C  4E75                     738      RTS
+0000165E                           739      
+0000165E                           740  *-------------------------------------------------
+0000165E                           741  *DRAW_BUILDING
+0000165E                           742  *--------------------------------------------------
+0000165E                           743  
+0000165E                           744  DRAW_BUILDING:
+0000165E  223C 00FFFFFF            745      MOVE.L #WHITE, D1
+00001664  103C 0050                746      MOVE.B #80, D0      ; Set color
+00001668  4E4F                     747      TRAP #15
+0000166A                           748  
+0000166A  2239 00001AE0            749      MOVE.L BUILDING_X, D1
+00001670  2439 00001AE4            750      MOVE.L BUILDING_Y, D2
+00001676  2639 00001AE0            751      MOVE.L BUILDING_X, D3
+0000167C  0683 00000032            752      ADD.L #BUILDING_W, D3
+00001682  2839 00001AE4            753      MOVE.L BUILDING_Y, D4
+00001688  0684 000000C8            754      ADD.L #BUILDING_H, D4
+0000168E                           755  
+0000168E  103C 0057                756      MOVE.B #87, D0      ; Draw rectangle
+00001692  4E4F                     757      TRAP #15
+00001694  4E75                     758      RTS
+00001696                           759      
+00001696                           760  DRAW_ROAD:
+00001696  223C 00FFFFFF            761      MOVE.L #WHITE, D1
+0000169C  103C 0050                762      MOVE.B #80, D0
+000016A0  4E4F                     763      TRAP #15
+000016A2                           764  
+000016A2  7200                     765      MOVE.L #0, D1             ; X start
+000016A4  2439 00001AE8            766      MOVE.L ROAD_Y, D2         ; Y start
+000016AA  2639 00001AA8            767      MOVE.L SCREEN_W, D3       ; X end
+000016B0  2839 00001AE8            768      MOVE.L ROAD_Y, D4
+000016B6  5284                     769      ADD.L #ROAD_HEIGHT, D4    ; Y end
+000016B8  103C 0057                770      MOVE.B #87, D0
+000016BC  4E4F                     771      TRAP #15
+000016BE  4E75                     772      RTS
+000016C0                           773  *-----------------------------------------------------------
+000016C0                           774  * Subroutine    : Collision Check
+000016C0                           775  * Description   : Axis-Aligned Bounding Box Collision Detection
+000016C0                           776  * Algorithm checks for overlap on the 4 sides of the Player and 
+000016C0                           777  * Enemy rectangles
+000016C0                           778  * PLAYER_X <= ENEMY_X + ENEMY_W &&
+000016C0                           779  * PLAYER_X + PLAYER_W >= ENEMY_X &&
+000016C0                           780  * PLAYER_Y <= ENEMY_Y + ENEMY_H &&
+000016C0                           781  * PLAYER_H + PLAYER_Y >= ENEMY_Y
+000016C0                           782  *-----------------------------------------------------------
+000016C0                           783  CHECK_COLLISIONS:
+000016C0                           784  
+000016C0                           785  ; -----------------------------
+000016C0                           786  ; Check Small Zombie Collision
+000016C0                           787  ; -----------------------------
+000016C0  4281                     788      CLR.L   D1
+000016C2  4282                     789      CLR.L   D2
+000016C4                           790  
+000016C4                           791  ; X-axis: PLAYER_X <= SMALLZOMB_X + WIDTH
+000016C4  2239 00001AB0            792      MOVE.L  PLAYER_X, D1
+000016CA  2439 00001ACC            793      MOVE.L  SMALLZOMB_X, D2
+000016D0  D4B8 0008                794      ADD.L   SMALLZOMB_W_INIT, D2
+000016D4  B481                     795      CMP.L   D1, D2
+000016D6  6E00 004C                796      BGT     CHECK_LARGEZOMB_COLLISION  ; skip small zombie if no overlap
+000016DA                           797  
+000016DA                           798  ; X-axis: PLAYER_X + PLAYER_W >= SMALLZOMB_X
+000016DA  2239 00001AB0            799      MOVE.L  PLAYER_X, D1
+000016E0  D2B8 0008                800      ADD.L   PLYR_W_INIT, D1
+000016E4  2439 00001ACC            801      MOVE.L  SMALLZOMB_X, D2
+000016EA  B481                     802      CMP.L   D1, D2
+000016EC  6D00 0036                803      BLT     CHECK_LARGEZOMB_COLLISION  ; skip small zombie if no overlap
+000016F0                           804  
+000016F0                           805  ; Y-axis: PLAYER_Y <= SMALLZOMB_Y + HEIGHT
+000016F0  2239 00001AB4            806      MOVE.L  PLAYER_Y, D1
+000016F6  2439 00001AD0            807      MOVE.L  SMALLZOMB_Y, D2
+000016FC  D4B8 0008                808      ADD.L   SMALLZOMB_H_INIT, D2
+00001700  B481                     809      CMP.L   D1, D2
+00001702  6E00 0020                810      BGT     CHECK_LARGEZOMB_COLLISION  ; skip small zombie if no overlap
+00001706                           811  
+00001706                           812  ; Y-axis: PLAYER_Y + PLAYER_H >= SMALLZOMB_Y
+00001706  2239 00001AB4            813      MOVE.L  PLAYER_Y, D1
+0000170C  D2B8 0008                814      ADD.L   PLYR_H_INIT, D1
+00001710  2439 00001AD0            815      MOVE.L  SMALLZOMB_Y, D2
+00001716  B481                     816      CMP.L   D1, D2
+00001718  6D00 000A                817      BLT     CHECK_LARGEZOMB_COLLISION  ; skip small zombie if no overlap
+0000171C                           818  
+0000171C                           819  ; Collision confirmed!
+0000171C  6100 0114                820      BSR     SMALLZOMB_COLLISION
+00001720  6000 0102                821      BRA     COLLISION_CHECK_DONE
+00001724                           822  
+00001724                           823  ; -----------------------------
+00001724                           824  ; Check Large Zombie Collision
+00001724                           825  ; -----------------------------
+00001724                           826  CHECK_LARGEZOMB_COLLISION:
+00001724  4281                     827      CLR.L   D1
+00001726  4282                     828      CLR.L   D2
+00001728                           829  
+00001728                           830  ; X-axis: PLAYER_X <= LARGEZOMB_X + WIDTH
+00001728  2239 00001AB0            831      MOVE.L  PLAYER_X, D1
+0000172E  2439 00001AD8            832      MOVE.L  LARGEZOMB_X, D2
+00001734  D4B8 0010                833      ADD.L   LARGEZOMB_W_INIT, D2
+00001738  B481                     834      CMP.L   D1, D2
+0000173A  6E00 0048                835      BGT     CHECK_FUEL_COLLISION  ; skip if no overlap
+0000173E                           836  
+0000173E                           837  ; X-axis: PLAYER_X + PLAYER_W >= LARGEZOMB_X
+0000173E  2239 00001AB0            838      MOVE.L  PLAYER_X, D1
+00001744  D2B8 0008                839      ADD.L   PLYR_W_INIT, D1
+00001748  2439 00001AD8            840      MOVE.L  LARGEZOMB_X, D2
+0000174E  B481                     841      CMP.L   D1, D2
+00001750  6D00 0032                842      BLT     CHECK_FUEL_COLLISION  ; skip if no overlap
+00001754                           843  
+00001754                           844  ; Y-axis: PLAYER_Y <= LARGEZOMB_Y + HEIGHT
+00001754  2239 00001AB4            845      MOVE.L  PLAYER_Y, D1
+0000175A  2439 00001ADC            846      MOVE.L  LARGEZOMB_Y, D2
+00001760  D4B8 0016                847      ADD.L   LARGEZOMB_H_INIT, D2
+00001764  B481                     848      CMP.L   D1, D2
+00001766  6E00 001C                849      BGT     CHECK_FUEL_COLLISION  ; skip if no overlap
+0000176A                           850  
+0000176A                           851  
+0000176A                           852  ; Y-axis: PLAYER_Y + PLAYER_H >= LARGEZOMB_Y
+0000176A  2239 00001AB4            853       MOVE.L  PLAYER_Y, D1
+00001770  D2B8 0008                854      ADD.L   PLYR_H_INIT, D1
+00001774  2439 00001ADC            855      MOVE.L  LARGEZOMB_Y, D2
+0000177A  B481                     856      CMP.L   D1, D2
+0000177C  6D00 0006                857      BLT     CHECK_FUEL_COLLISION  ; skip if no overlap
+00001780                           858  
+00001780                           859     ; Collision confirmed!
+00001780  6100 00DC                860     BSR     LARGEZOMB_COLLISION
+00001784                           861  
+00001784                           862  ; -----------------------------
+00001784                           863  ; Check Fuel Collision
+00001784                           864  ; ----------------------------- 
+00001784                           865  CHECK_FUEL_COLLISION:
+00001784                           866  
+00001784  0CB9 00000001 00001B1C   867      CMP.L   #1, FUEL_ACTIVE          ; Is the fuel currently visible?
+0000178E  6600 0094                868      BNE     COLLISION_CHECK_DONE    ; If not active, skip collision check
+00001792                           869  
+00001792  4281                     870      CLR.L   D1                        ; Clear D1 for calculations
+00001794  4282                     871      CLR.L   D2                        ; Clear D2 for calculations
+00001796                           872  
+00001796                           873  
+00001796                           874      ; Check X-axis overlap
+00001796  2239 00001AB0            875      MOVE.L  PLAYER_X, D1              ; Load player X position
+0000179C  2439 00001B14            876      MOVE.L  FUEL_X, D2                ; Load fuel X position
+000017A2  D4B8 0008                877      ADD.L   FUEL_W_INIT, D2           ; Add fuel width to get right edge
+000017A6  B481                     878      CMP.L   D1, D2                     ; Compare left side of player with right side of fuel
+000017A8  6F00 0006                879      BLE     FUEL_X2_CHECK              ; If player left <= fuel right, continue X check
+000017AC  6000 0076                880      BRA     COLLISION_CHECK_DONE         ; Otherwise, no collision
+000017B0                           881  
+000017B0                           882  FUEL_X2_CHECK:
+000017B0                           883      ; Check second X-axis overlap: PLAYER_X + PLAYER_W_INIT >= FUEL_X
+000017B0  D2B8 0008                884      ADD.L   PLYR_W_INIT, D1           ; Add player width to get right side of player
+000017B4  2439 00001B14            885      MOVE.L  FUEL_X, D2                ; Reload fuel X
+000017BA  B481                     886      CMP.L   D1, D2                     ; Compare right side of player to left side of fuel
+000017BC  6C00 0006                887      BGE     FUEL_Y1_CHECK              ; If player right >= fuel left, continue Y check
+000017C0  6000 0062                888      BRA     COLLISION_CHECK_DONE        ; Otherwise, no collision
+000017C4                           889  
+000017C4                           890  FUEL_Y1_CHECK:
+000017C4                           891      ; Check Y-axis overlap: PLAYER_Y <= FUEL_Y + FUEL_H_INIT
+000017C4  2239 00001AB4            892      MOVE.L  PLAYER_Y, D1              ; Load player Y position
+000017CA  2439 00001B18            893      MOVE.L  FUEL_Y, D2                ; Load fuel Y position
+000017D0  D4B8 000E                894      ADD.L   FUEL_H_INIT, D2           ; Add fuel height to get bottom of fuel
+000017D4  B481                     895      CMP.L   D1, D2                     ; Compare top of player with bottom of fuel
+000017D6  6F00 0006                896      BLE     FUEL_Y2_CHECK              ; If player top <= fuel bottom, continue Y check
+000017DA  6000 0048                897      BRA     COLLISION_CHECK_DONE       ; Otherwise, no collision
+000017DE                           898  
+000017DE                           899  FUEL_Y2_CHECK:
+000017DE                           900      ; Check second Y-axis overlap
+000017DE  D2B8 0008                901      ADD.L   PLYR_H_INIT, D1           ; Add player height to get bottom of player
+000017E2  2439 00001B18            902      MOVE.L  FUEL_Y, D2                ; Reload fuel Y
+000017E8  B481                     903      CMP.L   D1, D2                     ; Compare bottom of player with top of fuel
+000017EA  6C00 0006                904      BGE     FUEL_COLLECTED             ; If overlap confirmed, fuel collected
+000017EE  6000 0034                905      BRA     COLLISION_CHECK_DONE         ; Otherwise, no collision
+000017F2                           906  
+000017F2                           907  FUEL_COLLECTED:
+000017F2                           908      ;Fuel collected, update fuel and hide
+000017F2  2239 00001B08            909      MOVE.L  FUEL, D1                  ; Load current fuel amount
+000017F8  0681 0000000C            910      ADD.L   #12, D1                   ; Add 15 fuel (adjustable)
+000017FE  B2BC 00000064            911      CMP.L   #FUEL_MAX,  D1                   ;check if it goes over max
+00001804  6F00 0004                912      BLE     FUEL_OK                     ;if fuel is is <= 100, then ok
+00001808  7264                     913      MOVE.L  #FUEL_MAX,  D1                ;otherwise stay to 100
+0000180A                           914  FUEL_OK:
+0000180A  23C1 00001B08            915      MOVE.L  D1, FUEL
+00001810  23FC 00000000 00001B1C   916      MOVE.L  #0, FUEL_ACTIVE           ; Hide fuel until next respawn
+0000181A  42B9 00001B10            917      CLR.L   FUEL_RESPAWN_TIMER        ; Reset respawn timer
+00001820  6000 0002                918      BRA     COLLISION_CHECK_DONE      ; Finish fuel collision check
+00001824                           919      
+00001824                           920  COLLISION_CHECK_DONE:
+00001824                           921  
+00001824                           922      ; Continue normal collision logic
+00001824  D2B9 00001ABC            923      ADD.L   PLAYER_SCORE, D1          ; Update player score
+0000182A  23C1 00001ABC            924      MOVE.L  D1, PLAYER_SCORE
+00001830  4E75                     925      RTS                                ; Return from subroutine
+00001832                           926  ; ENEMY COLLISION RESPONSE
+00001832                           927  
+00001832                           928  SMALLZOMB_COLLISION:
+00001832  6100 FD26                929      BSR     PLAY_OPPS
+00001836  23FC 00000000 00001ABC   930      MOVE.L  #0, PLAYER_SCORE
+00001840                           931      ;small zombie kill count
+00001840                           932      
+00001840  2239 00001B04            933      MOVE.L  KILL_COUNT, D1
+00001846  5281                     934      ADD.L   #1, D1
+00001848  23C1 00001B04            935      MOVE.L  D1, KILL_COUNT
+0000184E                           936      ;reset small zombie psoiton
+0000184E                           937      
+0000184E  3239 00001AA8            938      MOVE.W  SCREEN_W, D1
+00001854  23C1 00001ACC            939      MOVE.L  D1, SMALLZOMB_X
+0000185A  6000 FF28                940      BRA     CHECK_FUEL_COLLISION
+0000185E                           941      
+0000185E                           942  LARGEZOMB_COLLISION:
+0000185E  6100 FCFA                943      BSR     PLAY_OPPS
+00001862                           944      ; Reduce hull integrity
+00001862  2239 00001B00            945      MOVE.L  HULL_INTEGRITY, D1
+00001868  0481 0000000A            946      SUB.L   #10, D1           ; Damage value
+0000186E  B2BC 00000000            947      CMP.L   #0, D1
+00001874  6C00 0004                948      BGE     HULL_OK
+00001878  7200                     949      MOVE.L  #0, D1            ; Hull cannot go below 0
+0000187A                           950  HULL_OK:
+0000187A  23C1 00001B00            951      MOVE.L  D1, HULL_INTEGRITY
+00001880                           952      
+00001880  0CB9 00000000 00001B00   953      CMP.L   #0, HULL_INTEGRITY        ; Is hull 0?
+0000188A  6700 0012                954      BEQ     EXIT                       ; If yes, go to exit and end game
+0000188E                           955  
+0000188E                           956      ; Reset large zombie X position
+0000188E  3239 00001AA8            957      MOVE.W  SCREEN_W, D1
+00001894  23C1 00001AD8            958      MOVE.L  D1, LARGEZOMB_X
+0000189A  6000 FEE8                959      BRA     CHECK_FUEL_COLLISION    
+0000189E                           960      
+0000189E                           961  *-----------------------------------------------------------
+0000189E                           962  * Subroutine    : EXIT
+0000189E                           963  * Description   : Exit message and End Game
+0000189E                           964  *-----------------------------------------------------------
+0000189E                           965  EXIT:
+0000189E                           966      ; Show if Exiting is Running
+0000189E  103C 000B                967      MOVE.B  #TC_CURSR_P,D0          ; Set Cursor Position
+000018A2  323C 4004                968      MOVE.W  #$4004,     D1          ; Col 40, Row 1
+000018A6  4E4F                     969      TRAP    #15                     ; Trap (Perform action)
+000018A8  43F9 00001A9B            970      LEA     EXIT_MSG,   A1          ; Exit
+000018AE  303C 000D                971      MOVE    #13,        D0          ; No Line feed
+000018B2  4E4F                     972      TRAP    #15                     ; Trap (Perform action)
+000018B4                           973      
+000018B4  103C 0009                974      MOVE.B  #TC_EXIT,   D0          ; Exit Code
+000018B8  4E4F                     975      TRAP    #15                     ; Trap (Perform action)
+000018BA                           976      
+000018BA  FFFF FFFF                977      SIMHALT
+000018BE                           978  
+000018BE                           979  *-----------------------------------------------------------
+000018BE                           980  * Section       : Messages
+000018BE                           981  * Description   : Messages to Print on Console, names should be
+000018BE                           982  * self documenting
+000018BE                           983  *-----------------------------------------------------------
+000018BE= 2A 2A 2A 20 57 45 ...    984  GAME_TITLE_MSG DC.B '*** WELCOME TO ZOMBIE SPLATTER ***',0
+000018E1= 50 72 65 73 73 20 ...    985  START_MSG      DC.B 'Press SPACE to Start',0
+000018F6= 4D 61 69 6E 20 4F ...    986  OBEJECTIVE_TITLE    DC.B    'Main Objectives', 0
+00001906= 44 4F 4E 54 20 52 ...    987  OBJECTIVE_1    DC.B    'DONT RUN OUT OF FUEL! - Pick up fuel that spawns to replenish - Green Rectangle', 0
+00001956= 4B 49 6C 6C 20 73 ...    988  OBJECTIVE_2    DC.B    'KIll small zombies to increase kill counter - small red square', 0
+00001995= 41 76 6F 69 64 20 ...    989  OBJECTIVE_3    DC.B    'Avoid the large the zombies or your hull gets damaged - large red square', 0
+000019DE                           990  
+000019DE= 53 63 6F 72 65 20 ...    991  SCORE_MSG       DC.B    'Score : ', 0       ; Score Message
+000019E7= 4B 65 79 43 6F 64 ...    992  KEYCODE_MSG     DC.B    'KeyCode : ', 0     ; Keycode Message
+000019F2= 4A 75 6D 70 2E 2E ...    993  JUMP_MSG        DC.B    'Jump....', 0       ; Jump Message
+000019FB                           994  
+000019FB= 4B 69 6C 6C 73 3A ...    995  KILL_MSG        DC.B    'Kills: ', 0        ; Kill message
+00001A03= 4F 75 74 20 6F 66 ...    996  FUEL_MSG        DC.B    'Out of Fuel!', 0   ; Fuel message
+00001A10= 48 55 4C 4C 3A 20 00     997  HULL_MSG        DC.B    'HULL: ',0
+00001A17= 46 75 65 6C 3A 20 00     998  FUEL_MSG_LABEL  DC.B    'Fuel: ', 0
+00001A1E= 48 75 6C 6C 20 49 ...    999  HULL_INTEGRITY_LABEL    DC.B    'Hull Integrity: ', 0
+00001A2F= 49 64 6C 65 2E 2E ...   1000  IDLE_MSG        DC.B    'Idle....', 0       ; Idle Message
+00001A38= 55 70 64 61 74 65 ...   1001  UPDATE_MSG      DC.B    'Update....', 0     ; Update Message
+00001A43= 44 72 61 77 2E 2E ...   1002  DRAW_MSG        DC.B    'Draw....', 0       ; Draw Message
+00001A4C                          1003  
+00001A4C= 58 3A 00                1004  X_MSG           DC.B    'X:', 0             ; X Position Message
+00001A4F= 59 3A 00                1005  Y_MSG           DC.B    'Y:', 0             ; Y Position Message
+00001A52= 56 3A 00                1006  V_MSG           DC.B    'V:', 0             ; Velocity Position Message
+00001A55= 47 3A 00                1007  G_MSG           DC.B    'G:', 0             ; Gravity Position Message
+00001A58= 47 4E 44 3A 00          1008  GND_MSG         DC.B    'GND:', 0           ; On Ground Position Message
+00001A5D                          1009  
+00001A5D                          1010  
+00001A5D= 2A 2A 2A 20 47 41 ...   1011  GAME_OVER_MSG DC.B '*** GAME OVER ***',0
+00001A6F= 50 72 65 73 73 20 ...   1012  RESTART_MSG   DC.B 'Press SPACE to Restart',0
+00001A86= 50 72 65 73 73 20 ...   1013  EXIT_GAME_MSG DC.B 'Press ESCAPE to Exit',0
+00001A9B= 45 78 69 74 69 6E ...   1014  EXIT_MSG        DC.B    'Exiting....', 0    ; Exit Message
+00001AA7                          1015  
+00001AA7                          1016  *-----------------------------------------------------------
+00001AA7                          1017  * Section       : Graphic Colors
+00001AA7                          1018  * Description   : Screen Pixel Color
+00001AA7                          1019  *-----------------------------------------------------------
+00001AA7  =00FFFFFF               1020  WHITE           EQU     $00FFFFFF   ;white color for player
+00001AA7  =000000FF               1021  RED             EQU     $000000FF   ;red color for zombies
+00001AA7  =0000FF00               1022  GREEN           EQU     $0000FF00  ; Green color for fuel
+00001AA7  =80FFFFFF               1023  GREY            EQU     $80FFFFFF     ;grey color for repair kit 
+00001AA7                          1024  
+00001AA7                          1025  *-----------------------------------------------------------
+00001AA7                          1026  * Section       : Screen Size
+00001AA7                          1027  * Description   : Screen Width and Height
+00001AA7                          1028  *-----------------------------------------------------------
+00001AA8                          1029  SCREEN_W        DS.W    01  ; Reserve Space for Screen Width
+00001AAA                          1030  SCREEN_H        DS.W    01  ; Reserve Space for Screen Height
+00001AAC                          1031  
+00001AAC                          1032  *-----------------------------------------------------------
+00001AAC                          1033  * Section       : Keyboard Input
+00001AAC                          1034  * Description   : Used for storing Keypresses
+00001AAC                          1035  *-----------------------------------------------------------
+00001AAC                          1036  CURRENT_KEY     DS.L    01  ; Reserve Space for Current Key Pressed
+00001AB0                          1037  
+00001AB0                          1038  *-----------------------------------------------------------
+00001AB0                          1039  * Section       : Character Positions
+00001AB0                          1040  * Description   : Player and Enemy Position Memory Locations
+00001AB0                          1041  *-----------------------------------------------------------
+00001AB0                          1042  PLAYER_X        DS.L    01  ; Reserve Space for Player X Position
+00001AB4                          1043  PLAYER_Y        DS.L    01  ; Reserve Space for Player Y Position
+00001AB8                          1044  JUMP_TIMER      DS.L    01  ; Jump cooldown timer
+00001ABC                          1045  PLAYER_SCORE    DS.L    01  ; Reserve Space for Player Score
+00001AC0                          1046  
+00001AC0                          1047  PLYR_VELOCITY   DS.L    01  ; Reserve Space for Player Velocity
+00001AC4                          1048  PLYR_GRAVITY    DS.L    01  ; Reserve Space for Player Gravity
+00001AC8                          1049  PLYR_ON_GND     DS.L    01  ; Reserve Space for Player on Ground
+00001ACC                          1050  
+00001ACC                          1051  SMALLZOMB_X     DS.L    01  ; Reserve Space for small zombie X Position
+00001AD0                          1052  SMALLZOMB_Y     DS.L    01  ; Reserve Space for small zombie Y Position
+00001AD4                          1053  
+00001AD4= 00000000                1054  ZOMBIE_SOUND_ACTIVE  DC.l 0   ; 0 = sound not playing, 1 = playing
+00001AD8                          1055  
+00001AD8                          1056  LARGEZOMB_X     DS.L    01  ; Reserve Space for large zombie X Position
+00001ADC                          1057  LARGEZOMB_Y     DS.L    01  ; Reserve Space for large zombie Y Position
+00001AE0                          1058  
+00001AE0                          1059  BUILDING_X      DS.L    01    ; X position
+00001AE4                          1060  BUILDING_Y      DS.L    01   ; Y position 
+00001AE8                          1061  
+00001AE8                          1062  ROAD_Y          DS.L    1       ; Y position of road 
+00001AEC                          1063  
+00001AEC                          1064  REPAIR            DS.L    01  ; Player fuel
+00001AF0                          1065  REPAIR_RESPAWN_TIMER   DS.L   1
+00001AF4                          1066  REPAIR_X         DS.L  1  ; Fuel X position
+00001AF8                          1067  REPAIR_Y         DS.L  1  ; Fuel Y position
+00001AFC                          1068  REPAIR_ACTIVE    DS.L  1  ; 1 if visible, 0 if not
+00001B00  =0000000A               1069  REPAIR_AMOUNT    EQU    10 ; How much fuel is restored when collected
+00001B00= 00000001                1070  HULL_INTEGRITY  DC.L    01      ;
+00001B04                          1071  
+00001B04                          1072  KILL_COUNT      DS.L    01  ; reserve space for kill counter
+00001B08                          1073  FUEL            DS.L    01  ; Player fuel
+00001B0C                          1074  FUEL_TIMER      DS.L    01   ; Counts frames for fuel decrease
+00001B10                          1075  FUEL_RESPAWN_TIMER   DS.L   1
+00001B14                          1076  
+00001B14                          1077  FUEL_X         DS.L  1  ; Fuel X position
+00001B18                          1078  FUEL_Y         DS.L  1  ; Fuel Y position
+00001B1C                          1079  FUEL_ACTIVE    DS.L  1  ; 1 if visible, 0 if not
+00001B20  =0000000A               1080  FUEL_AMOUNT    EQU    10 ; How much fuel is restored when collected
+00001B20                          1081  
+00001B20                          1082  *-----------------------------------------------------------
+00001B20                          1083  * Section       : Sounds
+00001B20                          1084  * Description   : Sound files, which are then loaded and given
+00001B20                          1085  * an address in memory, they take a longtime to process and play
+00001B20                          1086  * so keep the files small. Used https://voicemaker.in/ to 
+00001B20                          1087  * generate and Audacity to convert MP3 to WAV
+00001B20                          1088  *-----------------------------------------------------------
+00001B20= 6A 75 6D 70 2E 77 ...   1089  JUMP_WAV        DC.B    'jump.wav',0        ; Jump Sound
+00001B29= 72 75 6E 2E 77 61 ...   1090  RUN_WAV         DC.B    'run.wav',0         ; Run Sound
+00001B31= 6F 70 70 73 2E 77 ...   1091  OPPS_WAV        DC.B    'opps.wav',0        ; Collision Opps
+00001B3A= 5A 6F 6D 62 69 65 ...   1092  BACKGROUND_WAV  DC.B    'Zombie_Song.wav', 0
+00001B4A                          1093  
+00001B4A                          1094  
+00001B4A                          1095      END    START        ; last line of source
 
 No errors detected
 No warnings generated
@@ -950,133 +1105,155 @@ No warnings generated
 SYMBOL TABLE INFORMATION
 Symbol-name         Value
 -------------------------
-A                   1892
-CHECK_COLLISIONS    1570
-CHECK_FUEL_COLLISION  1634
-CHECK_LARGEZOMB_COLLISION  15D4
-COLLISION_CHECK_DONE  16D4
-CURRENT_KEY         1862
-DELAY_LOOP          12C8
-DRAW                1302
-DRAW_FUEL           152C
-DRAW_LARGEZOMB      14F4
-DRAW_MSG            17F9
-DRAW_PLAYER         1494
-DRAW_PLYR_DATA      1328
-DRAW_SMALLZOMB      14C4
+BACKGROUND_INDEX    3
+BACKGROUND_LOAD     1566
+BACKGROUND_WAV      1B3A
+BUILDING_H          C8
+BUILDING_W          32
+BUILDING_X          1AE0
+BUILDING_Y          1AE4
+CHECK_COLLISIONS    16C0
+CHECK_FUEL_COLLISION  1784
+CHECK_LARGEZOMB_COLLISION  1724
+COLLISION_CHECK_DONE  1824
+CURRENT_KEY         1AAC
+DELAY_LOOP          137C
+DRAW                13D2
+DRAW_BUILDING       165E
+DRAW_FUEL           161C
+DRAW_LARGEZOMB      15E4
+DRAW_MSG            1A43
+DRAW_PLAYER         1584
+DRAW_PLYR_DATA      1400
+DRAW_ROAD           1696
+DRAW_SMALLZOMB      15B4
 ESCAPE              1B
-EXIT                1740
-EXIT_GAME_MSG       183C
-EXIT_MSG            1851
-FUEL                189A
-FUEL_ACTIVE         18AE
+EXIT                189E
+EXIT_GAME_MSG       1A86
+EXIT_MSG            1A9B
+FUEL                1B08
+FUEL_ACTIVE         1B1C
 FUEL_AMOUNT         A
-FUEL_COLLECTED      16A2
-FUEL_DONE           1238
+FUEL_COLLECTED      17F2
+FUEL_DONE           12BA
 FUEL_H_INIT         E
 FUEL_MAX            64
-FUEL_MSG            17B9
-FUEL_MSG_LABEL      17CD
-FUEL_OK             16BA
-FUEL_RESPAWN_TIMER  18A2
-FUEL_TIMER          189E
+FUEL_MSG            1A03
+FUEL_MSG_LABEL      1A17
+FUEL_OK             180A
+FUEL_RESPAWN_TIMER  1B10
+FUEL_TIMER          1B0C
 FUEL_W_INIT         8
-FUEL_X              18A6
-FUEL_X2_CHECK       1660
-FUEL_Y              18AA
-FUEL_Y1_CHECK       1674
-FUEL_Y2_CHECK       168E
-GAME                115A
-GAMELOOP            115E
-GAME_OVER_MSG       1813
-GAME_TITLE_MSG      1760
+FUEL_X              1B14
+FUEL_X2_CHECK       17B0
+FUEL_Y              1B18
+FUEL_Y1_CHECK       17C4
+FUEL_Y2_CHECK       17DE
+GAME                11DC
+GAMELOOP            11E4
+GAME_OVER_MSG       1A5D
+GAME_TITLE_MSG      18BE
 GND_FALSE           0
-GND_MSG             180E
+GND_MSG             1A58
 GND_TRUE            1
 GREEN               FF00
-GREY                808080
-G_MSG               180B
-HANDLE_FUEL_RESPAWN  1208
-HULL_INTEGRITY      1892
-HULL_INTEGRITY_LABEL  17D4
+GREY                80FFFFFF
+G_MSG               1A55
+HANDLE_FUEL_RESPAWN  128A
+HULL_INTEGRITY      1B00
+HULL_INTEGRITY_LABEL  1A1E
 HULL_MAX            64
-HULL_MSG            17C6
-HULL_OK             172A
-IDLE                1434
-IDLE_MSG            17E5
-INITIALISE          1050
-INPUT               1174
-IS_PLAYER_ON_GND    13B0
+HULL_MSG            1A10
+HULL_OK             187A
+IDLE_MSG            1A2F
+INITIALISE          10AC
+INPUT               11FA
+IS_PLAYER_ON_GND    1488
 JMP_INDEX           1
-JUMP                13FE
-JUMP_DONE           1432
-JUMP_LOAD           1458
-JUMP_MSG            17A8
-JUMP_TIMER          186E
-JUMP_WAV            18B2
-KEYCODE_MSG         179D
-KILL_COUNT          1896
-KILL_MSG            17B1
-LARGEZOMB_COLLISION  170E
-LARGEZOMB_H_INIT    10
+JUMP                14D6
+JUMP_DONE           150A
+JUMP_LOAD           152A
+JUMP_MSG            19F2
+JUMP_TIMER          1AB8
+JUMP_WAV            1B20
+KEYCODE_MSG         19E7
+KILL_COUNT          1B04
+KILL_MSG            19FB
+LARGEZOMB_COLLISION  185E
+LARGEZOMB_H_INIT    16
 LARGEZOMB_W_INIT    10
-LARGEZOMB_X         188A
-LARGEZOMB_Y         188E
-MO                  12B6
-MOVE_ZOMBIE         12B6
-NO_FALL_LIMIT       1260
+LARGEZOMB_X         1AD8
+LARGEZOMB_Y         1ADC
+MOVE_ZOMBIE         136A
+NO_FALL_LIMIT       12E2
+OBEJECTIVE_TITLE    18F6
+OBJECTIVE_1         1906
+OBJECTIVE_2         1956
+OBJECTIVE_3         1995
 OPPS_INDEX          2
-OPPS_LOAD           1476
-OPPS_WAV            18C3
-PLAYER_SCORE        1872
-PLAYER_X            1866
-PLAYER_Y            186A
-PLAY_JUMP           146A
-PLAY_OPPS           1488
-PLAY_RUN            144C
+OPPS_LOAD           1548
+OPPS_WAV            1B31
+PLAYER_SCORE        1ABC
+PLAYER_X            1AB0
+PLAYER_Y            1AB4
+PLAY_BACKGROUND     1578
+PLAY_JUMP           153C
+PLAY_OPPS           155A
+PLAY_RUN            151E
 PLYR_DFLT_G         2
 PLYR_DFLT_V         0
-PLYR_GRAVITY        187A
+PLYR_GRAVITY        1AC4
 PLYR_H_INIT         8
 PLYR_JUMP_V         FFFFFFE7
-PLYR_ON_GND         187E
-PLYR_VELOCITY       1876
+PLYR_ON_GND         1AC8
+PLYR_VELOCITY       1AC0
 PLYR_W_INIT         8
-PROCESS_INPUT       1192
+PROCESS_INPUT       1218
 RED                 FF
-RESET_ZOMBIE_POSITION  12CE
-RESTART_MSG         1825
+REPAIR              1AEC
+REPAIR_ACTIVE       1AFC
+REPAIR_AMOUNT       A
+REPAIR_RESPAWN_TIMER  1AF0
+REPAIR_X            1AF4
+REPAIR_Y            1AF8
+RESET_LARGE_ZOMBIE  13A4
+RESET_SMALL_ZOMBIE  1382
+RESTART_MSG         1A6F
+ROAD_HEIGHT         1
+ROAD_Y              1AE8
 RUN_INDEX           0
-RUN_LOAD            143A
-RUN_WAV             18BB
-SCORE_MSG           1794
-SCREEN_H            1860
-SCREEN_W            185E
-SET_OFF_GROUND      13F2
-SET_ON_GROUND       13CE
-SKIP_DRAW_FUEL      156E
-SKIP_FUEL_DECREMENT  12B4
-SKIP_GAME_OVER      12B4
-SKIP_TIMER_DEC      11CE
-SMALLZOMB_COLLISION  16E2
+RUN_LOAD            150C
+RUN_WAV             1B29
+SCORE_MSG           19DE
+SCREEN_H            1AAA
+SCREEN_W            1AA8
+SET_OFF_GROUND      14CA
+SET_ON_GROUND       14A6
+SKIP_BUILDING_RESET  1336
+SKIP_DRAW_FUEL      165C
+SKIP_FUEL_DECREMENT  1368
+SKIP_GAME_OVER      1368
+SKIP_TIMER_DEC      1250
+SMALLZOMB_COLLISION  1832
 SMALLZOMB_H_INIT    8
 SMALLZOMB_W_INIT    8
-SMALLZOMB_X         1882
-SMALLZOMB_Y         1886
+SMALLZOMB_X         1ACC
+SMALLZOMB_Y         1AD0
 SPACEBAR            20
 START               1000
 START_MENU          100C
-START_MSG           177C
+START_MSG           18E1
 TC_CURSR_P          B
 TC_DBL_BUF          5C
 TC_EXIT             9
 TC_KEYCODE          13
 TC_SCREEN           21
 TC_S_SIZE           0
-UPDATE              11BA
-UPDATE_MSG          17EE
-V_MSG               1808
-WAIT_FOR_START      1042
+UPDATE              123C
+UPDATE_MSG          1A38
+V_MSG               1A52
+WAIT_FOR_START      109E
 WHITE               FFFFFF
-X_MSG               1802
-Y_MSG               1805
+X_MSG               1A4C
+Y_MSG               1A4F
+ZOMBIE_SOUND_ACTIVE  1AD4
