@@ -366,38 +366,43 @@ NO_FALL_LIMIT:
     ADD.L   PLAYER_Y,   D1          ; Add Velocity to Player
     MOVE.L  D1,         PLAYER_Y    ; Update Players Y Position 
 
-   ;-----------------------------------
+;-----------------------------------
 ; Check SMALL zombie position
 ;-----------------------------------
 
-    CLR.L   D1
-    MOVE.L  SMALLZOMB_X, D1      ; Load small zombie X
-    CMP.L   #0, D1               ; Has it reached left side?
-    BLE     RESET_SMALL_ZOMBIE   ; If yes reset it
+    MOVE.L  SMALLZOMB_X, D1
+    CMP.L   #0, D1
+    BGT     CHECK_LARGE_ZOMB
+    BSR     RESET_SMALL_ZOMBIE
+
+
+CHECK_LARGE_ZOMB:
 
 ;-----------------------------------
 ; Check LARGE zombie position
 ;-----------------------------------
 
-    CLR.L   D1
-    MOVE.L  LARGEZOMB_X, D1      ; Load large zombie X
-    CMP.L   #0, D1               ; Has it reached left side?
-    BLE     RESET_LARGE_ZOMBIE   ; If yes reset it
+    MOVE.L  LARGEZOMB_X, D1
+    CMP.L   #0, D1
+    BGT     MOVE_ZOMBIES
+    BSR     RESET_LARGE_ZOMBIE
 
-;-----------------------------------
-; Move both zombies
-;-----------------------------------
 
-    BSR     MOVE_ZOMBIE  
+MOVE_ZOMBIES:
+
+    BSR     MOVE_ZOMBIE 
     
     ; Move building left
-    SUB.L #1, BUILDING_X               ; Move 1 pixel left
-    ; Reset building if it is offscreen (like small zombie)
-    CMP.L #0, BUILDING_X
-    BGE SKIP_BUILDING_RESET
-    ; Offscreen: reset to right side
-    MOVE.W SCREEN_W, D1
-    MOVE.L D1, BUILDING_X
+    SUB.L   #1, BUILDING_X
+
+; Check if building moved offscreen
+    MOVE.L  BUILDING_X, D1
+    CMP.L   #-BUILDING_W, D1
+    BGT     SKIP_BUILDING_RESET
+
+; Reset building to right side
+    MOVE.W  SCREEN_W, D1
+    MOVE.L  D1, BUILDING_X
 
 SKIP_BUILDING_RESET:
 
@@ -1102,6 +1107,7 @@ BACKGROUND_WAV  DC.B    'Zombie_Song.wav', 0
 
 
     END    START        ; last line of source
+
 
 
 
