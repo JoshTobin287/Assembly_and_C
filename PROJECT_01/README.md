@@ -52,5 +52,5 @@ an issue i tried to fix but I couldnt fix without breaking everything else
 Visual glitches: - road does not reach end of screen 
 
 Game problems: - building only appears once
-                - zombies and fuel not aligned
+                - Large zombies and fuel not aligned
                   
