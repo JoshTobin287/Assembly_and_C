@@ -50,8 +50,10 @@ SMALLZOMB_H_INIT EQU    08          ; Enemy initial Height
 LARGEZOMB_W_INIT EQU    16         ; Enemy initial Width
 LARGEZOMB_H_INIT EQU    22         ; Enemy initial Height
 
-BUILDING_W      EQU 10     ; width of building
-BUILDING_H      EQU 50     ; height of building
+BUILDING_W      EQU     50     ; width of building
+BUILDING_H      EQU     200     ; height of building
+
+ROAD_HEIGHT   EQU       1       ; height of the road in pixels
 
 HULL_MAX    EQU         100
 
@@ -163,12 +165,6 @@ INITIALISE:
     MOVE.W SCREEN_W, D1
     MOVE.L D1, BUILDING_X
 
-    ; Place building at bottom of screen
-    MOVE.W SCREEN_H, D1
-    SUB.W #BUILDING_H, D1
-    MOVE.L D1, BUILDING_Y
-
-
     ; Place the Player at the left
     MOVE.L  #100,        PLAYER_X     ; Start player near left side
 
@@ -176,6 +172,16 @@ INITIALISE:
     MOVE.W  SCREEN_H,   D1          ; Place Screen width in D1
     DIVU    #02,        D1          ; divide by 2 for center on Y Axis
     MOVE.L  D1,         PLAYER_Y    ; Players Y Position
+    
+    ;Road
+    MOVE.L PLAYER_Y, D1
+    ADD.L #PLYR_H_INIT, D1       ; Road right under player
+    MOVE.L D1, ROAD_Y
+    
+    ;Place building on top of road 
+    MOVE.L ROAD_Y, D1            ; Get road Y position
+    SUB.L #BUILDING_H, D1        ; Building stands on road
+    MOVE.L D1, BUILDING_Y        ; Store building Y
 
     ; Initialise Player Score
     CLR.L   D1                      ; Clear contents of D1 (XOR is faster)
@@ -207,14 +213,9 @@ INITIALISE:
     DIVU    #02,        D1          ; divide by 2 for center on Y Axis
     MOVE.L  D1,         SMALLZOMB_Y     ; Enemy Y Position
     
-    ; Intial Postion for large Zombie
-    CLR.L   D1
-    MOVE.W  SCREEN_W,   D1
-    MOVE.L  D1,         LARGEZOMB_X
-    
-    CLR.L   D1
-    MOVE.W  SCREEN_H,   D1
-    MOVE.L  D1,         LARGEZOMB_Y
+    ; Place large zombie on top of road
+    MOVE.L PLAYER_Y, D1             ; top of player
+    MOVE.L D1, LARGEZOMB_Y          ; top of zombie
     
     ; Initialize Fuel
     MOVE.L  #100, FUEL       ; Start with 100 fuel units
@@ -228,8 +229,8 @@ INITIALISE:
     CLR.L   D1
     MOVE.L  SMALLZOMB_Y, FUEL_Y
     
-    MOVE.L  #0, FUEL_ACTIVE     ;not visible yet
-    CLR.L   FUEL_RESPAWN_TIMER  ;timer for respawn delay
+    MOVE.L  #1, FUEL_ACTIVE     
+    CLR.L   FUEL_RESPAWN_TIMER  
 
     ; Enable the screen back buffer(see easy 68k help)
 	MOVE.B  #TC_DBL_BUF,D0          ; 92 Enables Double Buffer
@@ -249,7 +250,7 @@ INITIALISE:
 *-----------------------------------------------------------
 GAME:
     BSR     PLAY_RUN                ; Play Run Wav
-    
+    BSR     PLAY_BACKGROUND
 GAMELOOP:
   
     ; Main Gameloop
@@ -320,18 +321,20 @@ SKIP_TIMER_DEC:
       
     ; fuel is not active
 HANDLE_FUEL_RESPAWN:
-    ADD.L   #1, FUEL_RESPAWN_TIMER   ; Increase respawn timer each frame
-    CMP.L   #180, FUEL_RESPAWN_TIMER ; Wait about 3 seconds (180 frames at 60fps)
-    BLT     FUEL_DONE                ; If not reached yet, exit update
+    ADD.L   #1, FUEL_RESPAWN_TIMER
+    CMP.L   #180, FUEL_RESPAWN_TIMER
+    BLT     FUEL_DONE
 
-     ; Respawn fuel
-    CLR.L   FUEL_RESPAWN_TIMER       ; Reset respawn timer
-    MOVE.W  SCREEN_W, D1             ; Get right side of screen
-    MOVE.L  D1, FUEL_X               ; Place repair at right edge
-    MOVE.L  #1, FUEL_ACTIVE          ; Make repair visible again   
-FUEL_DONE:
+    ; Respawn fuel
+    CLR.L   FUEL_RESPAWN_TIMER
 
-    ; Update the Players Positon based on Velocity and Gravity
+    MOVE.W  SCREEN_W, D1
+    MOVE.L  D1, FUEL_X
+
+
+
+    MOVE.L  #1, FUEL_ACTIVE   
+FUEL_DONE:    ; Update the Players Positon based on Velocity and Gravity
     CLR.L   D1                      ; Clear contents of D1 (XOR is faster)
     MOVE.L  PLYR_VELOCITY, D1       ; Fetch Player Velocity
     MOVE.L  PLYR_GRAVITY, D2        ; Fetch Player Gravity
@@ -370,18 +373,17 @@ NO_FALL_LIMIT:
 
     BSR     MOVE_ZOMBIE  
     
-         ; Move building left 1 pixel per frame
-    MOVE.L BUILDING_X, D1
-    SUB.L #1, D1
+    ; Move building left
+    SUB.L #1, BUILDING_X               ; Move 1 pixel left
+    ; Reset building if it is offscreen (like small zombie)
+    CMP.L #0, BUILDING_X
+    BGE SKIP_BUILDING_RESET
+    ; Offscreen: reset to right side
+    MOVE.W SCREEN_W, D1
     MOVE.L D1, BUILDING_X
 
-    ; If building goes off left side of screen, reset to right
-    CMP.L #0, D1
-    BGE SKIP_BUILDING_RESET
-    MOVE.W SCREEN_W, D1         ; right edge
-    MOVE.L D1, BUILDING_X
 SKIP_BUILDING_RESET:
-     
+
     ;Fuel Cowuntdown
     ADD.L   #1, FUEL_TIMER          ; increment timer per update
     CMP.L   #60, FUEL_TIMER         ; check if ~1 second passed (adjust if needed)
@@ -401,8 +403,8 @@ SKIP_GAME_OVER:
 *-----------------------------------------------------------
 MOVE_ZOMBIE:
     ;move zombies by X values
-    SUB.L   #2,        SMALLZOMB_X   
-    SUB.L   #3,        LARGEZOMB_X
+    SUB.L   #1,        SMALLZOMB_X   
+    SUB.L   #2,        LARGEZOMB_X
     
     ;DELAY loop
     MOVE.L  #3000,  D0
@@ -439,6 +441,7 @@ RESET_LARGE_ZOMBIE:
     MOVE.W  SCREEN_H, D1
     DIVU    #2, D1
     MOVE.L  D1, LARGEZOMB_Y
+   MOVE.L D1, LARGEZOMB_Y     ; Store top of zombie
 
     RTS
     
@@ -456,6 +459,7 @@ DRAW:
 	MOVE.W	#$FF00,     D1          ; Clear contents
 	TRAP    #15                     ; Trap (Perform action)
 	
+	BSR     DRAW_ROAD
     BSR     DRAW_BUILDING
     BSR     DRAW_PLYR_DATA          ; Draw Draw Score, HUD, Player X and Y
     BSR     DRAW_PLAYER             ; Draw Player
@@ -632,7 +636,6 @@ BACKGROUND_LOAD:
     MOVE    #71,        D0       ; Load into memory
     TRAP    #15
     RTS
-
 PLAY_BACKGROUND:
     MOVE    #BACKGROUND_INDEX, D1       ; Load Sound Index
     MOVE    #72,        D0       ; Play sound
@@ -741,7 +744,7 @@ SKIP_DRAW_FUEL:
 *--------------------------------------------------
 
 DRAW_BUILDING:
-    MOVE.L #GREY, D1
+    MOVE.L #WHITE, D1
     MOVE.B #80, D0      ; Set color
     TRAP #15
 
@@ -753,6 +756,20 @@ DRAW_BUILDING:
     ADD.L #BUILDING_H, D4
 
     MOVE.B #87, D0      ; Draw rectangle
+    TRAP #15
+    RTS
+    
+DRAW_ROAD:
+    MOVE.L #WHITE, D1
+    MOVE.B #80, D0
+    TRAP #15
+
+    MOVE.L #0, D1             ; X start
+    MOVE.L ROAD_Y, D2         ; Y start
+    MOVE.L SCREEN_W, D3       ; X end
+    MOVE.L ROAD_Y, D4
+    ADD.L #ROAD_HEIGHT, D4    ; Y end
+    MOVE.B #87, D0
     TRAP #15
     RTS
 *-----------------------------------------------------------
@@ -808,7 +825,7 @@ CHECK_COLLISIONS:
 ; -----------------------------
 ; Check Large Zombie Collision
 ; -----------------------------
-    CHECK_LARGEZOMB_COLLISION:
+CHECK_LARGEZOMB_COLLISION:
     CLR.L   D1
     CLR.L   D2
 
@@ -832,6 +849,7 @@ CHECK_COLLISIONS:
     ADD.L   LARGEZOMB_H_INIT, D2
     CMP.L   D1, D2
     BGT     CHECK_FUEL_COLLISION  ; skip if no overlap
+
 
 ; Y-axis: PLAYER_Y + PLAYER_H >= LARGEZOMB_Y
      MOVE.L  PLAYER_Y, D1
@@ -933,6 +951,9 @@ LARGEZOMB_COLLISION:
     MOVE.L  #0, D1            ; Hull cannot go below 0
 HULL_OK:
     MOVE.L  D1, HULL_INTEGRITY
+    
+    CMP.L   #0, HULL_INTEGRITY        ; Is hull 0?
+    BEQ     EXIT                       ; If yes, go to exit and end game
 
     ; Reset large zombie X position
     MOVE.W  SCREEN_W, D1
@@ -951,8 +972,10 @@ EXIT:
     LEA     EXIT_MSG,   A1          ; Exit
     MOVE    #13,        D0          ; No Line feed
     TRAP    #15                     ; Trap (Perform action)
+    
     MOVE.B  #TC_EXIT,   D0          ; Exit Code
     TRAP    #15                     ; Trap (Perform action)
+    
     SIMHALT
 
 *-----------------------------------------------------------
@@ -1038,12 +1061,8 @@ LARGEZOMB_Y     DS.L    01  ; Reserve Space for large zombie Y Position
 BUILDING_X      DS.L    01    ; X position
 BUILDING_Y      DS.L    01   ; Y position 
 
-REPAIR            DS.L    01  ; Player fuel
-REPAIR_RESPAWN_TIMER   DS.L   1
-REPAIR_X         DS.L  1  ; Fuel X position
-REPAIR_Y         DS.L  1  ; Fuel Y position
-REPAIR_ACTIVE    DS.L  1  ; 1 if visible, 0 if not
-REPAIR_AMOUNT    EQU    10 ; How much fuel is restored when collected
+ROAD_Y          DS.L    1       ; Y position of road 
+
 HULL_INTEGRITY  DC.L    01      ;
 
 KILL_COUNT      DS.L    01  ; reserve space for kill counter
@@ -1066,10 +1085,12 @@ FUEL_AMOUNT    EQU    10 ; How much fuel is restored when collected
 JUMP_WAV        DC.B    'jump.wav',0        ; Jump Sound
 RUN_WAV         DC.B    'run.wav',0         ; Run Sound
 OPPS_WAV        DC.B    'opps.wav',0        ; Collision Opps
-BACKGROUND_WAV  DC.B    'Zombie_groan.wav', 0
+BACKGROUND_WAV  DC.B    'Zombie_Song.wav', 0
 
 
     END    START        ; last line of source
+
+
 
 
 
