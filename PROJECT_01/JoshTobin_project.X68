@@ -2,8 +2,25 @@
 *-----------------------------------------------------------
 * Title      : ZOMBIE SPLATTER
 * Written by : Josh Tobin
-* Date       : 
-* Description: Project Starter Kit
+* Date       : 06/03/2026
+* Description: ZOMBIE SPLATTER is a 2D side scrolling game where zombies move 
+* across the screen from right to left. The player must react 
+* quickly to avoide the large zombies before they damage your hull integrity.
+* The player must kill small zombies to increas the kill counter to get as many 
+* kills as possible. The player must be careful as fuel is quickly running out,
+* so the player must pick up fuel drops that spawn on the screen.
+* If you your fuel goes to zero or your hull integrity goes to zero you lose.
+*
+*
+* This program handles the movement and resetting of zombies, 
+* ensuring that when a zombie moves off the right side of the 
+* screen, it respawns at their assigned X and Y coordinates.
+* small and large zombies have separate reset routines to 
+* manage their positions and activity.
+* 
+* This program also handles many collision factors between
+* the player and the objects in its path, all occur and result
+* in differnt ways. 
 *-----------------------------------------------------------
     ORG    $1000
 START:                  ; first instruction of program
@@ -232,12 +249,12 @@ INITIALISE:
     MOVE.L  #1, FUEL_ACTIVE     
     CLR.L   FUEL_RESPAWN_TIMER  
 
-    ; Enable the screen back buffer(see easy 68k help)
+    ; Enable the screen back buffer
 	MOVE.B  #TC_DBL_BUF,D0          ; 92 Enables Double Buffer
     MOVE.B  #17,        D1          ; Combine Tasks
 	TRAP	#15                     ; Trap (Perform action)
 
-    ; Clear the screen (see easy 68k help)
+    ; Clear the screen 
     MOVE.B  #TC_CURSR_P,D0          ; Set Cursor Position
 	MOVE.W  #$FF00,     D1          ; Fill Screen Clear
 	TRAP	#15                     ; Trap (Perform action)
@@ -414,37 +431,39 @@ DELAY_LOOP:
     BNE     DELAY_LOOP
     RTS
 *-----------------------------------------------------------
-* Subroutine    : Reset zombies 
-* Description   : Reset zombies if to passes 0 to Right of Screen
+* Subroutine    : Reset Small Zombie
+* Description   : Resets the small zombie position when it moves off the right side of the screen.
 *-----------------------------------------------------------
 RESET_SMALL_ZOMBIE:
-    CLR.L   D1
-    MOVE.W  SCREEN_W, D1          ; Get right side of screen
-    MOVE.L  D1, SMALLZOMB_X       ; Reset small zombie X position
+    CLR.L   D1                  ; Clear D1 register 
+    MOVE.W  SCREEN_W, D1        ; Load screen width into D1 
+    MOVE.L  D1, SMALLZOMB_X     ; Set small zombie's X position to right side of screen
 
     ; Reset Y position to middle of screen
-    CLR.L   D1
-    MOVE.W  SCREEN_H, D1
-    DIVU    #2, D1
-    MOVE.L  D1, SMALLZOMB_Y
+    CLR.L   D1                  ; Clear D1 again
+    MOVE.W  SCREEN_H, D1        ; Load screen height into D1
+    DIVU    #2, D1              ; Divide D1 by 2 to get middle of screen
+    MOVE.L  D1, SMALLZOMB_Y     ; Set small zombie's Y position to vertical center
 
-    RTS
-    
+    RTS                         ; Return from subroutine
+
+*-----------------------------------------------------------
+* Subroutine    : Reset Large Zombie
+* Description   : Resets the large zombie position when it moves off the right side of the screen.
+*-----------------------------------------------------------
 RESET_LARGE_ZOMBIE:
-    CLR.L   D1
-    MOVE.W  SCREEN_W, D1
-    ADD.L   #10, D1              ; Spawn further to the right
-    MOVE.L  D1, LARGEZOMB_X       ; Reset large zombie X position
+    CLR.L   D1                  ; Clear D1 register
+    MOVE.W  SCREEN_W, D1        ; Load screen width into D1
+    ADD.L   #10, D1             ; Offset further right to spawn outside screen
+    MOVE.L  D1, LARGEZOMB_X     ; Set large zombie's X position
 
     ; Reset Y position to middle of screen
-    CLR.L   D1
-    MOVE.W  SCREEN_H, D1
-    DIVU    #2, D1
-    MOVE.L  D1, LARGEZOMB_Y
-   MOVE.L D1, LARGEZOMB_Y     ; Store top of zombie
+    CLR.L   D1                  ; Clear D1
+    MOVE.W  SCREEN_H, D1        ; Load screen height
+    DIVU    #2, D1              ; Divide by 2 to center vertically
+    MOVE.L  D1, LARGEZOMB_Y     ; Set large zombie's Y position
 
-    RTS
-    
+    RTS                         ; Return from subroutine    
 *----------------------------------------------------------
 * Subroutine    : Draw
 * Description   : Draw Screen
@@ -627,9 +646,6 @@ PLAY_OPPS:
     TRAP    #15                     ; Trap (Perform action)
     RTS                             ; Return to subroutine
     
-;-----------------------------
-;Background Music routines
-;-----------------------------
 BACKGROUND_LOAD:
     LEA     BACKGROUND_WAV,    A1       ; Load WAV file pointer
     MOVE    #BACKGROUND_INDEX, D1       ; Assign it a free index
@@ -787,80 +803,77 @@ CHECK_COLLISIONS:
 ; -----------------------------
 ; Check Small Zombie Collision
 ; -----------------------------
-    CLR.L   D1
-    CLR.L   D2
+    CLR.L   D1                  ; Clear D1 to use as temporary register
+    CLR.L   D2                  ; Clear D2 to use as temporary register
 
-; X-axis: PLAYER_X <= SMALLZOMB_X + WIDTH
-    MOVE.L  PLAYER_X, D1
-    MOVE.L  SMALLZOMB_X, D2
-    ADD.L   SMALLZOMB_W_INIT, D2
-    CMP.L   D1, D2
-    BGT     CHECK_LARGEZOMB_COLLISION  ; skip small zombie if no overlap
+; X-axis: Check if player's left side is to the left of small zombie's right side
+    MOVE.L  PLAYER_X, D1        ; D1 = PLAYER_X 
+    MOVE.L  SMALLZOMB_X, D2     ; D2 = SMALLZOMB_X 
+    ADD.L   SMALLZOMB_W_INIT, D2 ; D2 = zombie's right X
+    CMP.L   D1, D2              ; Compare player's left X with zombie's right X
+    BGT     CHECK_LARGEZOMB_COLLISION  ; If player is completely to the right, skip
 
-; X-axis: PLAYER_X + PLAYER_W >= SMALLZOMB_X
-    MOVE.L  PLAYER_X, D1
-    ADD.L   PLYR_W_INIT, D1
-    MOVE.L  SMALLZOMB_X, D2
-    CMP.L   D1, D2
-    BLT     CHECK_LARGEZOMB_COLLISION  ; skip small zombie if no overlap
+; X-axis: Check if player's right side is to the right of small zombie's left side
+    MOVE.L  PLAYER_X, D1        ; D1 = PLAYER_X
+    ADD.L   PLYR_W_INIT, D1     ; D1 = player's right X
+    MOVE.L  SMALLZOMB_X, D2     ; D2 = zombie's left X
+    CMP.L   D1, D2              ; Compare player's right X with zombie's left X
+    BLT     CHECK_LARGEZOMB_COLLISION  ; If player is completely to the left, skip
 
-; Y-axis: PLAYER_Y <= SMALLZOMB_Y + HEIGHT
-    MOVE.L  PLAYER_Y, D1
-    MOVE.L  SMALLZOMB_Y, D2
-    ADD.L   SMALLZOMB_H_INIT, D2
-    CMP.L   D1, D2
-    BGT     CHECK_LARGEZOMB_COLLISION  ; skip small zombie if no overlap
+; Y-axis: Check if player's top is above small zombie's bottom
+    MOVE.L  PLAYER_Y, D1        ; D1 = PLAYER_Y 
+    MOVE.L  SMALLZOMB_Y, D2     ; D2 = zombie's top Y
+    ADD.L   SMALLZOMB_H_INIT, D2 ; D2 = zombie's bottom Y
+    CMP.L   D1, D2              ; Compare player's top Y with zombie's bottom Y
+    BGT     CHECK_LARGEZOMB_COLLISION  ; If player is below zombie, skip
 
-; Y-axis: PLAYER_Y + PLAYER_H >= SMALLZOMB_Y
-    MOVE.L  PLAYER_Y, D1
-    ADD.L   PLYR_H_INIT, D1
-    MOVE.L  SMALLZOMB_Y, D2
-    CMP.L   D1, D2
-    BLT     CHECK_LARGEZOMB_COLLISION  ; skip small zombie if no overlap
+; Y-axis: Check if player's bottom is below small zombie's top
+    MOVE.L  PLAYER_Y, D1        ; D1 = PLAYER_Y
+    ADD.L   PLYR_H_INIT, D1     ; D1 = player's bottom Y
+    MOVE.L  SMALLZOMB_Y, D2     ; D2 = zombie's top Y
+    CMP.L   D1, D2              ; Compare player's bottom Y with zombie's top Y
+    BLT     CHECK_LARGEZOMB_COLLISION  ; If player is above zombie, skip
 
-; Collision confirmed!
-    BSR     SMALLZOMB_COLLISION
-    BRA     COLLISION_CHECK_DONE
+; Collision confirmed for small zombie
+    BSR     SMALLZOMB_COLLISION ; Call small zombie collision handler
+    BRA     COLLISION_CHECK_DONE ; Skip large zombie check after collision
 
 ; -----------------------------
 ; Check Large Zombie Collision
 ; -----------------------------
 CHECK_LARGEZOMB_COLLISION:
-    CLR.L   D1
-    CLR.L   D2
+    CLR.L   D1                  ; Clear D1
+    CLR.L   D2                  ; Clear D2
 
-; X-axis: PLAYER_X <= LARGEZOMB_X + WIDTH
+; X-axis: Check if player's left side is to the left of large zombie's right side
     MOVE.L  PLAYER_X, D1
     MOVE.L  LARGEZOMB_X, D2
     ADD.L   LARGEZOMB_W_INIT, D2
     CMP.L   D1, D2
-    BGT     CHECK_FUEL_COLLISION  ; skip if no overlap
+    BGT     CHECK_FUEL_COLLISION  ; Skip if no horizontal overlap
 
-; X-axis: PLAYER_X + PLAYER_W >= LARGEZOMB_X
+; X-axis: Check if player's right side is to the right of large zombie's left side
     MOVE.L  PLAYER_X, D1
     ADD.L   PLYR_W_INIT, D1
     MOVE.L  LARGEZOMB_X, D2
     CMP.L   D1, D2
-    BLT     CHECK_FUEL_COLLISION  ; skip if no overlap
+    BLT     CHECK_FUEL_COLLISION  ; Skip if no horizontal overlap
 
-; Y-axis: PLAYER_Y <= LARGEZOMB_Y + HEIGHT
+; Y-axis: Check if player's top is above large zombie's bottom
     MOVE.L  PLAYER_Y, D1
     MOVE.L  LARGEZOMB_Y, D2
     ADD.L   LARGEZOMB_H_INIT, D2
     CMP.L   D1, D2
-    BGT     CHECK_FUEL_COLLISION  ; skip if no overlap
+    BGT     CHECK_FUEL_COLLISION  ; Skip if no vertical overlap
 
-
-; Y-axis: PLAYER_Y + PLAYER_H >= LARGEZOMB_Y
-     MOVE.L  PLAYER_Y, D1
+; Y-axis: Check if player's bottom is below large zombie's top
+    MOVE.L  PLAYER_Y, D1
     ADD.L   PLYR_H_INIT, D1
     MOVE.L  LARGEZOMB_Y, D2
     CMP.L   D1, D2
-    BLT     CHECK_FUEL_COLLISION  ; skip if no overlap
+    BLT     CHECK_FUEL_COLLISION  ; Skip if no vertical overlap
 
-   ; Collision confirmed!
-   BSR     LARGEZOMB_COLLISION
-
+    BSR     LARGEZOMB_COLLISION ; Call large zombie collision 
 ; -----------------------------
 ; Check Fuel Collision
 ; ----------------------------- 
@@ -1089,6 +1102,7 @@ BACKGROUND_WAV  DC.B    'Zombie_Song.wav', 0
 
 
     END    START        ; last line of source
+
 
 
 
