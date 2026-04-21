@@ -14,6 +14,7 @@ START   ORG     $1000
         CLR.L   D3              ; Running sum initialized to 0
         MOVE.W  #3, D4          ; Loop counter set to 3
         LEA     LIMIT,  A1
+        TRAP    #15
 
 GAME_LOOP:
 * Input two numbers and add them using REGISTER_ADDER subroutine
@@ -50,9 +51,9 @@ GAME_LOOP:
         BNE     GAME_LOOP
 INVALID_INPUT:
         MOVE.B  #14,    D0
-        LEA     
+        LEA     OVER_LIMIT, A1 
         TRAP    #15
-        BRA     GAME_LOOP
+        BSR     START
 
 * Display final sum
         MOVE.B  #14, D0
@@ -81,7 +82,7 @@ NEW_LINE:
 *-----------------------------------------------------------
 * Strings
 LIMIT          DC.B    'Do no enter more than 4 numbers per prompt!',0
-OVER_LIMIT     DC.B    'You have went over limit try again'.0
+OVER_LIMIT     DC.B    'You have went over limit try again',0
 PROMPT         DC.B    'Enter number: ',0
 RESULT         DC.B    'The sum is: ',0
 FINAL_RESULT   DC.B    'Final sum is: ',0
