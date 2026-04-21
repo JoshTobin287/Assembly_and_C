@@ -13,6 +13,7 @@ START   ORG     $1000
 
         CLR.L   D3              ; Running sum initialized to 0
         MOVE.W  #3, D4          ; Loop counter set to 3
+        LEA     LIMIT,  A1
 
 GAME_LOOP:
 * Input two numbers and add them using REGISTER_ADDER subroutine
@@ -22,6 +23,8 @@ GAME_LOOP:
 
         MOVE.B  #4, D0          ; Task 4: Read integer input (No input validation - Vulnerable!)
         TRAP    #15             ; Execute system call
+        CMP.L   #1001, D1
+        BGT     INVALID_INPUT
         MOVE.L  D1, D2          ; Store first number in D2
 
         MOVE.B  #14, D0
@@ -45,6 +48,11 @@ GAME_LOOP:
 * Decrement loop counter and repeat if not zero
         SUBQ.W  #1, D4
         BNE     GAME_LOOP
+INVALID_INPUT:
+        MOVE.B  #14,    D0
+        LEA     
+        TRAP    #15
+        BRA     GAME_LOOP
 
 * Display final sum
         MOVE.B  #14, D0
@@ -72,12 +80,15 @@ NEW_LINE:
 
 *-----------------------------------------------------------
 * Strings
+LIMIT          DC.B    'Do no enter more than 4 numbers per prompt!',0
+OVER_LIMIT     DC.B    'You have went over limit try again'.0
 PROMPT         DC.B    'Enter number: ',0
 RESULT         DC.B    'The sum is: ',0
 FINAL_RESULT   DC.B    'Final sum is: ',0
 CRLF           DC.B    $D,$A,0
 
         END     START
+
 
 *~Font name~Courier New~
 *~Font size~10~
