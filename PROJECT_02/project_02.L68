@@ -1,11 +1,11 @@
 00001000 Starting Address
 Assembler used: EASy68K Editor/Assembler v5.16.01
-Created On: 21/04/2026 12:12:23
+Created On: 23/04/2026 16:52:15
 
 00000000                             1  *-----------------------------------------------------------
 00000000                             2  * Title        : Parameter Passing Example for Easy68k
-00000000                             3  * Written by   : Philip Bourke
-00000000                             4  * Date Created : March-25-2025
+00000000                             3  * Written by   : Josh Tobin
+00000000                             4  * Date Created : 
 00000000                             5  * Description  : Demonstrates passing parameters using registers
 00000000                             6  *                and stack, performing arithmetic operations,
 00000000                             7  *                and running a loop to keep a running sum.
@@ -17,82 +17,99 @@ Created On: 21/04/2026 12:12:23
 00001000                            13  
 00001000  4283                      14          CLR.L   D3              ; Running sum initialized to 0
 00001002  383C 0003                 15          MOVE.W  #3, D4          ; Loop counter set to 3
-00001006  43F9 00001096             16          LEA     LIMIT,  A1
-0000100C  4E4F                      17          TRAP    #15
-0000100E                            18  
-0000100E                            19  GAME_LOOP:
-0000100E                            20  * Input two numbers and add them using REGISTER_ADDER subroutine
-0000100E  103C 000E                 21          MOVE.B  #14, D0         ; Task 14: Display string
-00001012  43F9 000010E5             22          LEA     PROMPT, A1      ; Load address of prompt string
-00001018  4E4F                      23          TRAP    #15             ; System call (No input validation - Vulnerable!)
-0000101A                            24  
-0000101A  103C 0004                 25          MOVE.B  #4, D0          ; Task 4: Read integer input (No input validation - Vulnerable!)
-0000101E  4E4F                      26          TRAP    #15             ; Execute system call
-00001020  B2BC 000003E9             27          CMP.L   #1001, D1
-00001026  6E00 0036                 28          BGT     INVALID_INPUT
-0000102A  2401                      29          MOVE.L  D1, D2          ; Store first number in D2
-0000102C                            30  
-0000102C  103C 000E                 31          MOVE.B  #14, D0
-00001030  43F9 000010E5             32          LEA     PROMPT, A1
-00001036  4E4F                      33          TRAP    #15             ; Display prompt again (No validation - Vulnerable!)
-00001038                            34  
-00001038  103C 0004                 35          MOVE.B  #4, D0
-0000103C  4E4F                      36          TRAP    #15             ; Read second number into D1 (No validation - Vulnerable!)
+00001006  103C 000E                 16          MOVE.B  #14, D0
+0000100A  43F9 000010C6             17          LEA     LIMIT,  A1
+00001010  4E4F                      18          TRAP    #15
+00001012                            19          
+00001012  6100 00A4                 20          BSR     NEW_LINE
+00001016                            21  
+00001016                            22  GAME_LOOP:
+00001016                            23  * Input two numbers and add them using REGISTER_ADDER subroutine
+00001016  103C 000E                 24          MOVE.B  #14, D0         ; Task 14: Display string
+0000101A  43F9 00001115             25          LEA     PROMPT, A1      ; Load address of prompt string
+00001020  4E4F                      26          TRAP    #15             ; System call (No input validation - Vulnerable!)
+00001022                            27  
+00001022  103C 0004                 28          MOVE.B  #4, D0          ; Task 4: Read integer input (No input validation - Vulnerable!)
+00001026  4E4F                      29          TRAP    #15             ; Execute system call
+00001028                            30          
+00001028  B2BC 0000270F             31          CMP.L   #9999, D1       ; max 4 digits
+0000102E  6E00 0058                 32          BGT     INVALID_INPUT
+00001032  B2BC 00000000             33          CMP.L   #0, D1          ;prevents negatives
+00001038  6D00 004E                 34          BLT     INVALID_INPUT
+0000103C                            35          
+0000103C  2401                      36          MOVE.L  D1, D2          ; Store first number in D2
 0000103E                            37  
-0000103E  6100 0044                 38          BSR     REGISTER_ADDER  ; Call subroutine (D1 = D1 + D2)
-00001042  D681                      39          ADD.L   D1, D3          ; Add result to running sum
-00001044                            40  
-00001044  103C 000E                 41          MOVE.B  #14, D0
-00001048  43F9 000010F4             42          LEA     RESULT, A1
-0000104E  4E4F                      43          TRAP    #15
-00001050  103C 0003                 44          MOVE.B  #3, D0
-00001054  4E4F                      45          TRAP    #15
-00001056                            46  
-00001056  6100 0030                 47          BSR     NEW_LINE
-0000105A                            48  
-0000105A                            49  * Decrement loop counter and repeat if not zero
-0000105A  5344                      50          SUBQ.W  #1, D4
-0000105C  66B0                      51          BNE     GAME_LOOP
-0000105E                            52  INVALID_INPUT:
-0000105E  103C 000E                 53          MOVE.B  #14,    D0
-00001062  43F9 000010C2             54          LEA     OVER_LIMIT, A1 
-00001068  4E4F                      55          TRAP    #15
-0000106A  6194                      56          BSR     START
-0000106C                            57  
-0000106C                            58  * Display final sum
-0000106C  103C 000E                 59          MOVE.B  #14, D0
-00001070  43F9 00001101             60          LEA     FINAL_RESULT, A1
-00001076  4E4F                      61          TRAP    #15
-00001078  2203                      62          MOVE.L  D3, D1
-0000107A  103C 0003                 63          MOVE.B  #3, D0
-0000107E  4E4F                      64          TRAP    #15
-00001080                            65  
-00001080  FFFF FFFF                 66          SIMHALT
-00001084                            67  
-00001084                            68  *-----------------------------------------------------------
-00001084                            69  * Add numbers using register parameters
-00001084                            70  REGISTER_ADDER:
-00001084  D282                      71          ADD.L   D2, D1          ; Add D2 to D1 (No bounds checking - Vulnerable!)
-00001086  4E75                      72          RTS                     ; Return from subroutine
-00001088                            73  
-00001088                            74  *-----------------------------------------------------------
-00001088                            75  * Subroutine to display Carriage Return and Line Feed
-00001088                            76  NEW_LINE:
-00001088  103C 000E                 77          MOVE.B  #14, D0
-0000108C  43F9 00001110             78          LEA     CRLF, A1
-00001092  4E4F                      79          TRAP    #15
-00001094  4E75                      80          RTS
-00001096                            81  
-00001096                            82  *-----------------------------------------------------------
-00001096                            83  * Strings
-00001096= 44 6F 20 6E 6F 20 ...     84  LIMIT          DC.B    'Do no enter more than 4 numbers per prompt!',0
-000010C2= 59 6F 75 20 68 61 ...     85  OVER_LIMIT     DC.B    'You have went over limit try again',0
-000010E5= 45 6E 74 65 72 20 ...     86  PROMPT         DC.B    'Enter number: ',0
-000010F4= 54 68 65 20 73 75 ...     87  RESULT         DC.B    'The sum is: ',0
-00001101= 46 69 6E 61 6C 20 ...     88  FINAL_RESULT   DC.B    'Final sum is: ',0
-00001110= 0D 0A 00                  89  CRLF           DC.B    $D,$A,0
-00001113                            90  
-00001113                            91          END     START
+0000103E  103C 000E                 38          MOVE.B  #14, D0
+00001042  43F9 00001115             39          LEA     PROMPT, A1
+00001048  4E4F                      40          TRAP    #15             ; Display prompt again (No validation - Vulnerable!)
+0000104A                            41  
+0000104A  103C 0004                 42          MOVE.B  #4, D0
+0000104E  4E4F                      43          TRAP    #15             ; Read second number into D1 (No validation - Vulnerable!)
+00001050                            44          
+00001050  B2BC 0000270F             45          CMP.L   #9999, D1       ; max 4 digits
+00001056  6E00 0030                 46          BGT     INVALID_INPUT
+0000105A  B2BC 00000000             47          CMP.L   #0, D1          ;prevents negatives
+00001060  6D00 0026                 48          BLT     INVALID_INPUT
+00001064                            49  
+00001064  6100 004E                 50          BSR     REGISTER_ADDER  ; Call subroutine (D1 = D1 + D2)
+00001068  D681                      51          ADD.L   D1, D3          ; Add result to running sum
+0000106A                            52  
+0000106A  103C 000E                 53          MOVE.B  #14, D0
+0000106E  43F9 00001124             54          LEA     RESULT, A1
+00001074  4E4F                      55          TRAP    #15
+00001076  103C 0003                 56          MOVE.B  #3, D0
+0000107A  4E4F                      57          TRAP    #15
+0000107C                            58  
+0000107C  6100 003A                 59          BSR     NEW_LINE
+00001080                            60  
+00001080                            61  * Decrement loop counter and repeat if not zero
+00001080  5344                      62          SUBQ.W  #1, D4
+00001082  6692                      63          BNE     GAME_LOOP
+00001084  6000 0016                 64          BRA     FINAL_SUM
+00001088                            65  INVALID_INPUT:
+00001088  103C 000E                 66          MOVE.B  #14,    D0
+0000108C  43F9 000010F2             67          LEA     OVER_LIMIT, A1 
+00001092  4E4F                      68          TRAP    #15
+00001094                            69          
+00001094  6100 0022                 70          BSR     NEW_LINE
+00001098  6000 FF7C                 71          BRA     GAME_LOOP
+0000109C                            72  
+0000109C                            73  * Display final sum
+0000109C                            74  FINAL_SUM:
+0000109C  103C 000E                 75          MOVE.B  #14, D0
+000010A0  43F9 00001131             76          LEA     FINAL_RESULT, A1
+000010A6  4E4F                      77          TRAP    #15
+000010A8                            78          
+000010A8  2203                      79          MOVE.L  D3, D1
+000010AA  103C 0003                 80          MOVE.B  #3, D0
+000010AE  4E4F                      81          TRAP    #15
+000010B0                            82  
+000010B0  FFFF FFFF                 83          SIMHALT
+000010B4                            84  
+000010B4                            85  *-----------------------------------------------------------
+000010B4                            86  * Add numbers using register parameters
+000010B4                            87  REGISTER_ADDER:
+000010B4  D282                      88          ADD.L   D2, D1          ; Add D2 to D1 (No bounds checking - Vulnerable!)
+000010B6  4E75                      89          RTS                     ; Return from subroutine
+000010B8                            90  
+000010B8                            91  *-----------------------------------------------------------
+000010B8                            92  * Subroutine to display Carriage Return and Line Feed
+000010B8                            93  NEW_LINE:
+000010B8  103C 000E                 94          MOVE.B  #14, D0
+000010BC  43F9 00001140             95          LEA     CRLF, A1
+000010C2  4E4F                      96          TRAP    #15
+000010C4  4E75                      97          RTS
+000010C6                            98  
+000010C6                            99  *-----------------------------------------------------------
+000010C6                           100  * Strings
+000010C6= 44 6F 20 6E 6F 20 ...    101  LIMIT          DC.B    'Do no enter more than 4 numbers per prompt!',0
+000010F2= 59 6F 75 20 68 61 ...    102  OVER_LIMIT     DC.B    'You have went over limit try again',0
+00001115= 45 6E 74 65 72 20 ...    103  PROMPT         DC.B    'Enter number: ',0
+00001124= 54 68 65 20 73 75 ...    104  RESULT         DC.B    'The sum is: ',0
+00001131= 46 69 6E 61 6C 20 ...    105  FINAL_RESULT   DC.B    'Final sum is: ',0
+00001140= 0D 0A 00                 106  CRLF           DC.B    $D,$A,0
+00001143                           107  
+00001143                           108          END     START
 
 No errors detected
 No warnings generated
@@ -101,14 +118,15 @@ No warnings generated
 SYMBOL TABLE INFORMATION
 Symbol-name         Value
 -------------------------
-CRLF                1110
-FINAL_RESULT        1101
-GAME_LOOP           100E
-INVALID_INPUT       105E
-LIMIT               1096
-NEW_LINE            1088
-OVER_LIMIT          10C2
-PROMPT              10E5
-REGISTER_ADDER      1084
-RESULT              10F4
+CRLF                1140
+FINAL_RESULT        1131
+FINAL_SUM           109C
+GAME_LOOP           1016
+INVALID_INPUT       1088
+LIMIT               10C6
+NEW_LINE            10B8
+OVER_LIMIT          10F2
+PROMPT              1115
+REGISTER_ADDER      10B4
+RESULT              1124
 START               1000
