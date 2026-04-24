@@ -19,7 +19,8 @@ _start:
     call        printf  ;print the LIMIT message
 
 GAME_LOOP:
-; Input two numbers and add them using REGISTER_ADDER subroutine
+; Inputting two numbers and add them using REGISTER_ADDER subroutine
+    ;number 1
     lea rdi,    [PROMPT]    ;load prompt string
     xor rax,    rax         ;clears rax fo calling printf
     call        printf      ;prints the prompt message
@@ -33,10 +34,26 @@ GAME_LOOP:
 
     cmp rax,    9999        ;check if number is greater than 9999
     jg  INVALID_INPUT       ;if number is greater than 9999, then jump to OVER_LIMIT error
+    cmp rax,    0
+    jl  INVALID_INPUT
+;-------------------------------------------------------------------------------------
+    ;number 2
+    lea rdi,    [PROMPT]    ;load prompt string
+    xor rax,    rax         ;clears rax fo calling printf
+    call        printf      ;prints the prompt message
 
-    dec rcx
-    jnz GAME_LOOP
-    jmp EXIT
+    lea rdi,    [FORMAT]    ;format string with "%ld"
+    lea rsi,    [number2]   ;address where input will be stored
+    xor rax,    rax         ;
+    call    scanf           ;read input into number1
+
+    mov     rax, [number2]   ;load first number into rax
+
+    cmp rax,    9999        ;check if number is greater than 9999
+    jg  INVALID_INPUT       ;if number is greater than 9999, then jump to OVER_LIMIT error
+    cmp rax,    0
+    jl  INVALID_INPUT
+    
 
 
 INVALID_INPUT:
@@ -49,6 +66,12 @@ EXIT:
     mov rax, 60     ;syscall number for exit 
     xor rdi, rdi    ;return code 0 
     syscall         ;exit program
+
+REGISTER_ADDER:
+    mov rax,    rdi
+    add rax,    rsi
+    ret
+
 
 section .bss
 
