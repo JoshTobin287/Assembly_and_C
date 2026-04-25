@@ -53,6 +53,23 @@ GAME_LOOP:
     jg  INVALID_INPUT       ;if number is greater than 9999, then jump to OVER_LIMIT error
     cmp rax,    0
     jl  INVALID_INPUT
+
+;----------------------------------------------------------------------------------------
+    ;add
+    mov rdi,    rax
+    mov rsi,    rdx
+    call        REGISTER_ADDER
+    
+    add rbx,    rax
+    lea rdi,    [RESULT]
+    mov rsi,    rax
+    xor rax     rax
+    call        printf
+
+    ;loop
+    dec rcx
+    jnz GAME_LOOP
+    jmp FINAL_SUM
     
 
 
@@ -61,6 +78,7 @@ INVALID_INPUT:
     xor rax,    rax
     call        printf
     jmp         GAME_LOOP
+
 
 EXIT: 
     mov rax, 60     ;syscall number for exit 
