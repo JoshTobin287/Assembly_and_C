@@ -49,18 +49,21 @@ GAME_LOOP:
 
     mov     rdx, [number2]   ;load first number into rax
 
-    cmp rax,    9999        ;check if number is greater than 9999
+    cmp rdx,    9999        ;check if number is greater than 9999
     jg  INVALID_INPUT       ;if number is greater than 9999, then jump to OVER_LIMIT error
-    cmp rax,    0
+    cmp rdx,    0
     jl  INVALID_INPUT
 
 ;----------------------------------------------------------------------------------------
     ;add
+    mov rax,    [number1]
+    mov rdx,    [number2]
     mov rdi,    rax             ;first number to rdi
     mov rsi,    rdx             ;second number to rsi
     call        REGISTER_ADDER  ;returns result in rax
     
     add rbx,    rax             ;add result to running total
+
     lea rdi,    [RESULT]        ;load result
     mov rsi,    rax             ;value to print
     xor rax,    rax             ;clears rax fo calling printf
