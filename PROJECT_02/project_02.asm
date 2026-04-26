@@ -47,7 +47,7 @@ GAME_LOOP:
     xor rax,    rax         ;
     call    scanf           ;read input into number1
 
-    mov     rax, [number2]   ;load first number into rax
+    mov     rdx, [number2]   ;load first number into rax
 
     cmp rax,    9999        ;check if number is greater than 9999
     jg  INVALID_INPUT       ;if number is greater than 9999, then jump to OVER_LIMIT error
@@ -56,29 +56,33 @@ GAME_LOOP:
 
 ;----------------------------------------------------------------------------------------
     ;add
-    mov rdi,    rax
-    mov rsi,    rdx
-    call        REGISTER_ADDER
+    mov rdi,    rax             ;first number to rdi
+    mov rsi,    rdx             ;second number to rsi
+    call        REGISTER_ADDER  ;returns result in rax
     
-    add rbx,    rax
-    lea rdi,    [RESULT]
-    mov rsi,    rax
-    xor rax     rax
-    call        printf
+    add rbx,    rax             ;add result to running total
+    lea rdi,    [RESULT]        ;load result
+    mov rsi,    rax             ;value to print
+    xor rax,    rax             ;clears rax fo calling printf
+    call        printf          ;prints result message
 
     ;loop
-    dec rcx
-    jnz GAME_LOOP
-    jmp FINAL_SUM
+    dec rcx                     ;decrease the loop counter
+    jnz GAME_LOOP               ;repeat if not zero
+    jmp FINAL_SUM               ;otherwise go to final sum
     
 
-
 INVALID_INPUT:
-    lea rdi,    [OVER_LIMIT]
-    xor rax,    rax
-    call        printf
-    jmp         GAME_LOOP
+    lea rdi,    [OVER_LIMIT]    ;load error message
+    xor rax,    rax             ;clears rax fo calling printf
+    call        printf          ;print error message
+    jmp         GAME_LOOP       ;restart loop
 
+FINAL_SUM:
+    lea rdi,    [FINAL_RESULT]  ;load final result message
+    mov rsi,    rbx             ;the total sum of numbers
+    xor rax,    rax             ;clears rax fo calling printf
+    call        printf          ;prints final result message
 
 EXIT: 
     mov rax, 60     ;syscall number for exit 
@@ -86,11 +90,11 @@ EXIT:
     syscall         ;exit program
 
 REGISTER_ADDER:
-    mov rax,    rdi
-    add rax,    rsi
-    ret
+    mov rax,    rdi ;move first number into rax
+    add rax,    rsi ;add second number 
+    ret             ;return result in rax
 
-
+;-------------------------------------------------------------------
 section .bss
 
 number1 resq 1      ;reserve 8 bits for first number
