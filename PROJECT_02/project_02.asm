@@ -7,8 +7,8 @@
 ;                numbers togther. The user cannot enter more than 4 numbers.
 ;-----------------------------------------------------------
 
-global _start           ;program entry point 
-extern printf, scanf    ;library C functions
+global _start, REGISTER_ADDER           ;program entry point 
+extern printf, scanf                    ;library C functions
 
 section .text
 
