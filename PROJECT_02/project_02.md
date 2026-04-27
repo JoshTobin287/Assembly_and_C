@@ -1,1 +1,3 @@
-Project 2 - Josh Tobin 
+Title: Project 2
+Written By: Josh Tobin
+Desctiption: 
