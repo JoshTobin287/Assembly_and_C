@@ -2,7 +2,9 @@
 ; Title        : Converting 68k assembly to x86_64
 ; Written by   : Josh Tobin
 ; Date Created : 
-; Description  : 
+; Description  : A loop based code project that prompt a user to enter a number twice 3 times,
+;                with a sum after each prompt which then results in a final sum that adds all prompt
+;                numbers togther. The user cannot enter more than 4 numbers.
 ;-----------------------------------------------------------
 
 global _start           ;program entry point 
@@ -11,15 +13,16 @@ extern printf, scanf    ;library C functions
 section .text
 
 _start:
-    mov rcx,    3       ;set loop counter to 3
-    mov rbx,    0       ;set running total to 0
+    mov qword   [counter],  3       ;set loop counter to 3
+    mov rbx,    0                   ;set running total to 0
 
-    lea rdi,    [LIMIT] ;load address of LIMIT message into rdi
-    xor rax,    rax     ;clears rax fo calling printf
-    call        printf  ;print the LIMIT message
+    lea rdi,    [LIMIT]             ;load address of LIMIT message into rdi
+    xor rax,    rax                 ;clears rax fo calling printf
+    call        printf              ;print the LIMIT message
 
 GAME_LOOP:
 ; Inputting two numbers and add them using REGISTER_ADDER subroutine
+
     ;number 1
     lea rdi,    [PROMPT]    ;load prompt string
     xor rax,    rax         ;clears rax fo calling printf
@@ -34,8 +37,8 @@ GAME_LOOP:
 
     cmp rax,    9999        ;check if number is greater than 9999
     jg  INVALID_INPUT       ;if number is greater than 9999, then jump to OVER_LIMIT error
-    cmp rax,    0
-    jl  INVALID_INPUT
+    cmp rax,    0           ;chek if number is less than 0
+    jl  INVALID_INPUT       ;if number is less than 0 jmp to error
 ;-------------------------------------------------------------------------------------
     ;number 2
     lea rdi,    [PROMPT]    ;load prompt string
@@ -51,13 +54,11 @@ GAME_LOOP:
 
     cmp rdx,    9999        ;check if number is greater than 9999
     jg  INVALID_INPUT       ;if number is greater than 9999, then jump to OVER_LIMIT error
-    cmp rdx,    0
-    jl  INVALID_INPUT
+    cmp rdx,    0           ;chek if number is less than 0
+    jl  INVALID_INPUT       ;if number is less than 0 jmp to error
 
 ;----------------------------------------------------------------------------------------
     ;add
-    mov rax,    [number1]
-    mov rdx,    [number2]
     mov rdi,    rax             ;first number to rdi
     mov rsi,    rdx             ;second number to rsi
     call        REGISTER_ADDER  ;returns result in rax
@@ -70,7 +71,7 @@ GAME_LOOP:
     call        printf          ;prints result message
 
     ;loop
-    dec rcx                     ;decrease the loop counter
+    dec qword   [counter]       ;decrease the loop counter
     jnz GAME_LOOP               ;repeat if not zero
     jmp FINAL_SUM               ;otherwise go to final sum
     
@@ -100,8 +101,9 @@ REGISTER_ADDER:
 ;-------------------------------------------------------------------
 section .bss
 
-number1 resq 1      ;reserve 8 bits for first number
-number2 resq 1      ;reserve 8 bits for second number
+number1 resq 1      ;reserve 8 bytes for first number
+number2 resq 1      ;reserve 8 bytes for second number
+counter resq 1      ;reserve 8 bytes for loop counter
 
 section .data
 
