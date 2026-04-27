@@ -59,6 +59,8 @@ GAME_LOOP:
 
 ;----------------------------------------------------------------------------------------
     ;add
+    mov rax,    [number1]       ;reload number1 from memory
+    mov rdx,    [number2]       ;reload number2 from memory
     mov rdi,    rax             ;first number to rdi
     mov rsi,    rdx             ;second number to rsi
     call        REGISTER_ADDER  ;returns result in rax
@@ -112,5 +114,6 @@ OVER_LIMIT db "You went over limit try again",10,0          ;OVER LIMIT message
 PROMPT db "Enter number: ",0                                ;input prompt message
 RESULT db "The sum is: %ld",10,0                          ;result of sums message
 FINAL_RESULT db "Final sum is: %ld",10,0                    ;final result of sums total
-FORMAT db "%ld",0                                           ;scanf format for integers
+FORMAT db " %ld",0                                           ;scanf format for integers
+
 
