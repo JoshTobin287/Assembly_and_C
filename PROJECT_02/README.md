@@ -6,7 +6,7 @@ is set to 9999, and the minumm is 0 so if the user enters more than 5 numbers or
 to that of Easy 68k to keep the core functions, chagning the code based on x86 code used.
 
 Project features summarised:
-x86_64 NASM assmebly as the main program for conversion
+x86_64 NASM assmebly as the main program for conversion \
 Uses _start as an entry point for the program to execute
 Used C Library functions such as printf and scanf, this is throguhout out my project to help print messages and read input from keyboard
 The program executes three times per loop
