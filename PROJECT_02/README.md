@@ -23,4 +23,6 @@ program ends.
 How to use my program: \
 To use my program you must use ./project_02, this will execute the process to begin.
 
+I also created a test script which tests numbers using the REGISTER_ADDER that i made, which i set globally to be used across my files. 
+
 
